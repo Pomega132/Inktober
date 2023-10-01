@@ -2,9 +2,37 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title></title>
-</head>
-<body>
+    <meta name="viewport" content="width=device-width" />
+    <link href="/Content/angular-material.min.css" rel="stylesheet" />
+    <link href="/Content/Site.css" rel="stylesheet" />
+    <link href="index.css" rel="stylesheet" />
 
+    <title></title>
+
+    <script src="/Scripts/angular.min.js"></script>
+    <script src="/Scripts/angular-animate.min.js"></script>
+    <script src="/Scripts/angular-aria.min.js"></script>
+    <script src="/Scripts/angular-material.min.js"></script>
+    <script src="/Scripts/ListeInktober.js"></script>
+    <script src="index.js"></script>
+</head>
+<body ng-app="Inktober" ng-controller="Controller as ctrl" ng-init="ctrl.Init()" layout="column">
+    <h1 class="text-center">Webtober</h1>
+    <md-content layout flex>
+    <md-grid-list md-cols-xs="2"  md-cols-sm="3" md-cols-md="5" md-cols-gt-md="8" md-gutter="5" md-row-height="12em" flex>
+        <md-grid-tile ng-repeat="day in Inktober" layout layout-align="center stretch">
+            <md-card flex>
+                <md-card-title layout="column">
+                    <div class="md-subhead text-center">{{day.Day}} Octobre</div>
+                    <div class="md-headline text-center">{{day.SujetEn}}</div>
+                    <div class="md-headline text-center">{{day.SujetFr}}</div>
+                </md-card-title>
+                <md-card-actions layout layout-align="center center">
+                    <md-button class="md-raised md-primary" ng-href="/{{day.Day | day : 2}}" ng-disabled="CheckDate(day.Day)">Lancé</md-button>
+                </md-card-actions>
+            </md-card>
+        </md-grid-tile>
+    </md-grid-list>
+    </md-content>
 </body>
 </html>

@@ -1,0 +1,47 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link href="/Content/angular-material.min.css" rel="stylesheet" />
+    <link href="/Content/Site.css" rel="stylesheet" />
+    <link href="index.css" rel="stylesheet" />
+
+    <title></title>
+
+    <script src="/Scripts/angular.min.js"></script>
+    <script src="/Scripts/angular-animate.min.js"></script>
+    <script src="/Scripts/angular-aria.min.js"></script>
+    <script src="/Scripts/angular-material.min.js"></script>
+    <script src="/Scripts/ListeInktober.js"></script>
+    <script src="index.js"></script>
+</head>
+<body ng-app="Inktober" ng-controller="Controller as ctrl" ng-init="ctrl.Init()" layout="column" layout-padding>
+    <h1 class="text-center">Dream / Rêve</h1>
+    <h4 class="text-center">Mon journal de rêves</h4>
+    <div layout layout-align="center center" flex>
+        <md-button ng-click="TournerGauche()" visible="GetLeftPageIndex() > 1" ng-disabled="ToRight || ToLeft">Tourner la page</md-button>
+        <div id="Diary">
+            <div id="PageGauche" layout="column" visible="GetLeftPageIndex() > 0">
+                <textarea id="textbox-left" ng-model="Pages[GetLeftPageIndex()]" ng-trim="false" scroll="TextToRight('textbox-right')" flex></textarea>
+                <div class="Page"><strong>Page {{GetLeftPageIndex()}}</strong></div>
+            </div>
+            <div id="PageDroite" ng-class="{Couverture: Page==0}" layout="column">
+                <textarea id="textbox-right" ng-model="Pages[GetRightPageIndex()]" ng-trim="false" flex></textarea>
+                <div class="text-right Page"><strong>Page {{GetRightPageIndex()}}</strong></div>
+            </div>
+            <div id="PageTransition" ng-class="{ToRight: ToRight, ToLeft: ToLeft}">
+                <div id="Recto" layout="column">
+                    <textarea id="textbox-left" ng-model="Pages[Recto]" readonly flex></textarea>
+                    <div class="Page"><strong>Page {{Recto}}</strong></div>
+                </div>
+                <div id="Verso" layout="column">
+                    <textarea id="textbox-right" ng-model="Pages[Verso]" readonly flex></textarea>
+                    <div class="text-right Page"><strong>Page {{Verso}}</strong></div>
+                </div>
+            </div>
+        </div>
+        <md-button ng-click="TournerDroite()" ng-disabled="ToRight || ToLeft">Tourner la page</md-button>
+    </div>
+</body>
+</html>

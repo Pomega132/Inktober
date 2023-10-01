@@ -1,0 +1,151 @@
+﻿@font-face {
+    font-family: 'Gold Lines';
+    src: url('Fonts/Gold-Lines.woff');
+}
+
+body {
+    overflow: hidden;
+}
+
+#Diary {
+    aspect-ratio: 710 / 572;
+    height: 100%;
+    position: relative;
+    perspective: 2500px;
+    transform-style: preserve-3d;
+    font-family: 'Gold Lines';
+}
+
+#PageGauche,
+#PageTransition,
+#PageDroite {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 0;
+    padding: 1em;
+}
+
+    #PageGauche:before,
+    #PageTransition:before,
+    #PageDroite:before {
+        content: "";
+        background-image: url("Images/FondPapier.png");
+        background-size: cover;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        margin: -1em;
+        z-index: -1;
+    }
+
+#PageGauche {
+    right: 50%;
+    left: 0;
+}
+
+#PageDroite {
+    right: 0;
+    left: 50%;
+}
+
+    #PageDroite:before {
+        transform: rotateY(180deg);
+    }
+
+#PageTransition {
+    width: 50%;
+    box-sizing: border-box;
+    visibility: hidden;
+    transform-origin: right;
+    transform-style: preserve-3d;
+    position: relative;
+    height: 100%
+}
+
+    #PageTransition.ng-animate {
+        visibility: visible;
+    }
+
+    #PageTransition.ToRight {
+        -moz-animation: 0.8s ease-in-out ToRight;
+        -o-animation: 0.8s ease-in-out ToRight;
+        -webkit-animation: 0.8s ease-in-out ToRight;
+        animation: 0.8s ease-in-out ToRight;
+    }
+
+    #PageTransition.ToLeft {
+        -moz-animation: 0.8s ease-in-out ToLeft;
+        -o-animation: 0.8s ease-in-out ToLeft;
+        -webkit-animation: 0.8s ease-in-out ToLeft;
+        animation: 0.8s ease-in-out ToLeft;
+    }
+
+    #PageTransition #Recto,
+    #PageTransition #Verso {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        padding: 1em;
+    }
+
+    #PageTransition #Recto {
+        background-image: url("Images/FondPapier.png");
+        background-size: cover;
+    }
+
+    #PageTransition #Verso {
+        transform: rotateY(180deg) translateZ(1px);
+    }
+
+        #PageTransition #Verso:before {
+            content: "";
+            transform: rotateY(180deg);
+            background-image: url("Images/FondPapier.png");
+            background-size: cover;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            margin: -1em;
+            z-index: -1;
+        }
+
+.Page{
+    font-size:2rem;
+}
+
+textarea {
+    resize: none;
+    width: 100%;
+    height: 100%;
+    background: none;
+    border: none;
+    font-family: 'Gold Lines';
+    font-size: 1.8rem;
+}
+
+    textarea:focus-visible {
+        outline: none;
+    }
+
+@keyframes ToRight {
+    from {
+        transform: rotateY(180deg);
+    }
+
+    to {
+        transform: rotateY(0deg);
+    }
+}
+
+@keyframes ToLeft {
+    from {
+        transform: rotateY(0deg);
+    }
+
+    to {
+        transform: rotateY(180deg);
+    }
+}
