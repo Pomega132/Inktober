@@ -1,2 +1,53 @@
 ﻿body {
 }
+
+#Main {
+    position: relative;
+}
+
+#Overlay {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border:2px black solid;
+}
+
+#Timer {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    padding: 15px;
+    font-size: 2rem;
+    background: rgb(0, 0, 0,.5);
+    border: black 5px solid;
+    -moz-border-radius: 15px;
+    -webkit-border-radius: 15px;
+    border-radius: 15px;
+}
+
+#Score {
+    background: rgb(0, 0, 0,.5);
+    gap: 50px;
+}
+
+.Texte {
+    font-size: 3rem;
+   color: rgba(255, 255, 255, .87);
+}
+
+button {
+    font-size: 3rem;
+    border: white 8px solid;
+    -moz-border-radius: 15px;
+    -webkit-border-radius: 15px;
+    border-radius: 15px;
+    background: #bb2a2a;
+    color: white;
+    padding: 20px;
+}
+
+    button:hover {
+        background: #1e8717;
+    }

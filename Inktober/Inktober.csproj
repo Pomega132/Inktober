@@ -80,6 +80,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="01\Images\FondPapier.png" />
+    <Content Include="02\Images\Spider_One.png" />
+    <Content Include="02\Images\SpiderRed.png" />
     <Content Include="03\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
