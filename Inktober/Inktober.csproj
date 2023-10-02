@@ -80,6 +80,13 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="01\Images\FondPapier.png" />
+    <Content Include="03\index.css">
+      <DependentUpon>index.html</DependentUpon>
+    </Content>
+    <Content Include="03\index.html" />
+    <Content Include="03\index.js">
+      <DependentUpon>index.html</DependentUpon>
+    </Content>
     <Content Include="02\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
