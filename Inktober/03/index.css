@@ -1,2 +1,22 @@
-﻿body {
+﻿:root{
+    --size:30px;
 }
+
+body {
+}
+
+.Case {
+    width: var(--size);
+    height: var(--size);
+    position: relative;
+}
+
+    .Case img {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        width: var(--size);
+        height: var(--size);
+    }

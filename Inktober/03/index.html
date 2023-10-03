@@ -17,7 +17,34 @@
     <script src="index.js"></script>
 </head>
 <body ng-app="Inktober" ng-controller="Controller as ctrl" ng-init="ctrl.Init()" layout="column">
-    <h1 class="text-center"></h1>
-    <h4 class="text-center"></h4>
+    <h1 class="text-center">Path / Chemin</h1>
+    <h4 class="text-center">Le site génère un chemin qui relie les deux drapeaux.</h4>
+    <div layout="row" layout-align="center center">
+        <md-input-container>
+            <label>Largeur</label>
+            <input type="number" ng-model="Large">
+        </md-input-container>
+        <md-input-container>
+            <label>Hauteur</label>
+            <input type="number" ng-model="Haut">
+        </md-input-container>
+        <md-input-container>
+            <md-checkbox class="md-primary" ng-model="Instantane">Instantanément</md-checkbox>
+        </md-input-container>
+        <!--<md-input-container>
+            <md-checkbox class="md-primary" ng-model="Isole">Caché les chemins isolés</md-checkbox>
+        </md-input-container>-->
+        <md-button ng-click="Generate()">Générer</md-button>
+    </div>
+    <md-content id="Map" layout="column" layout-align="start center" flex>
+        <div class="Ligne" ng-repeat="ligne in Grille" layout>
+            <div class="Case" ng-repeat="c in ligne" ng-click="SetStart(c)" ng-right-click="SetEnd(c)">
+                <img ng-src="Images/Grass/grass_{{c.Fond | zero : 2}}.png" />
+                <img ng-src="Images/Path/{{c.Path | zero : 2}}.png" ng-show="CheckIsole(c)" />
+                <img src="Images/FlagVert.png" ng-if="c.X == Start.X && c.Y == Start.Y" />
+                <img src="Images/FlagRouge.png" ng-if="c.X == End.X && c.Y == End.Y" />
+            </div>
+        </div>
+    </md-content>
 </body>
 </html>
