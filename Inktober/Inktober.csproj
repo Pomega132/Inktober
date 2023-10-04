@@ -82,6 +82,8 @@
     <Content Include="01\Images\FondPapier.png" />
     <Content Include="02\Images\Spider_One.png" />
     <Content Include="02\Images\SpiderRed.png" />
+    <Content Include="04\Images\Hameçon.png" />
+    <Content Include="04\Images\Poisson.png" />
     <Content Include="04\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
@@ -140,193 +142,193 @@
     <Content Include="01\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="05\index.css" >
+    <Content Include="05\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="05\index.html" />
-    <Content Include="05\index.js" >
+    <Content Include="05\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="06\index.css" >
+    <Content Include="06\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="06\index.html" />
-    <Content Include="06\index.js" >
+    <Content Include="06\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="07\index.css" >
+    <Content Include="07\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="07\index.html" />
-    <Content Include="07\index.js" >
+    <Content Include="07\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="08\index.css" >
+    <Content Include="08\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="08\index.html" />
-    <Content Include="08\index.js" >
+    <Content Include="08\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="09\index.css" >
+    <Content Include="09\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="09\index.html" />
-    <Content Include="09\index.js" >
+    <Content Include="09\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="10\index.css" >
+    <Content Include="10\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="10\index.html" />
-    <Content Include="10\index.js" >
+    <Content Include="10\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="11\index.css" >
+    <Content Include="11\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="11\index.html" />
-    <Content Include="11\index.js" >
+    <Content Include="11\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="12\index.css" >
+    <Content Include="12\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="12\index.html" />
-    <Content Include="12\index.js" >
+    <Content Include="12\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="13\index.css" >
+    <Content Include="13\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="13\index.html" />
-    <Content Include="13\index.js" >
+    <Content Include="13\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="14\index.css" >
+    <Content Include="14\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="14\index.html" />
-    <Content Include="14\index.js" >
+    <Content Include="14\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="15\index.css" >
+    <Content Include="15\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="15\index.html" />
-    <Content Include="15\index.js" >
+    <Content Include="15\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="16\index.css" >
+    <Content Include="16\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="16\index.html" />
-    <Content Include="16\index.js" >
+    <Content Include="16\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="17\index.css" >
+    <Content Include="17\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="17\index.html" />
-    <Content Include="17\index.js" >
+    <Content Include="17\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="18\index.css" >
+    <Content Include="18\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="18\index.html" />
-    <Content Include="18\index.js" >
+    <Content Include="18\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="19\index.css" >
+    <Content Include="19\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="19\index.html" />
-    <Content Include="19\index.js" >
+    <Content Include="19\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="20\index.css" >
+    <Content Include="20\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="20\index.html" />
-    <Content Include="20\index.js" >
+    <Content Include="20\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="21\index.css" >
+    <Content Include="21\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="21\index.html" />
-    <Content Include="21\index.js" >
+    <Content Include="21\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="22\index.css" >
+    <Content Include="22\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="22\index.html" />
-    <Content Include="22\index.js" >
+    <Content Include="22\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="23\index.css" >
+    <Content Include="23\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="23\index.html" />
-    <Content Include="23\index.js" >
+    <Content Include="23\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="24\index.css" >
+    <Content Include="24\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="24\index.html" />
-    <Content Include="24\index.js" >
+    <Content Include="24\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="25\index.css" >
+    <Content Include="25\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="25\index.html" />
-    <Content Include="25\index.js" >
+    <Content Include="25\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="26\index.css" >
+    <Content Include="26\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="26\index.html" />
-    <Content Include="26\index.js" >
+    <Content Include="26\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="27\index.css" >
+    <Content Include="27\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="27\index.html" />
-    <Content Include="27\index.js" >
+    <Content Include="27\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="28\index.css" >
+    <Content Include="28\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="28\index.html" />
-    <Content Include="28\index.js" >
+    <Content Include="28\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="29\index.css" >
+    <Content Include="29\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="29\index.html" />
-    <Content Include="29\index.js" >
+    <Content Include="29\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="30\index.css" >
+    <Content Include="30\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="30\index.html" />
-    <Content Include="30\index.js" >
+    <Content Include="30\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
-    <Content Include="31\index.css" >
+    <Content Include="31\index.css">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="31\index.html" />
-    <Content Include="31\index.js" >
+    <Content Include="31\index.js">
       <DependentUpon>index.html</DependentUpon>
     </Content>
     <Content Include="Content\angular-material.css" />
