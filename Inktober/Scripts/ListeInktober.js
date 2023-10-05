@@ -22,7 +22,8 @@
     {
         Day: 5,
         SujetEn: "Map",
-        SujetFr: "Carte"
+        SujetFr: "Carte",
+        Ignorer: true
     },
     {
         Day: 6,

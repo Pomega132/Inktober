@@ -28,7 +28,8 @@
                     <div class="md-headline text-center">{{day.SujetFr}}</div>
                 </md-card-title>
                 <md-card-actions layout layout-align="center center">
-                    <md-button class="md-raised md-primary" ng-href="/{{day.Day | day : 2}}" ng-disabled="CheckDate(day.Day)">Lancé</md-button>
+                    <md-button ng-if="day.Ignorer" class="md-raised md-warn" ng-disabled="CheckDate(day.Day)">Ignoré</md-button>
+                    <md-button ng-if="!day.Ignorer" class="md-raised md-primary" ng-href="/{{day.Day | day : 2}}" ng-disabled="CheckDate(day.Day)">Lancé</md-button>
                 </md-card-actions>
             </md-card>
         </md-grid-tile>

@@ -1,1 +1,70 @@
-﻿
+﻿#Main {
+    background: linear-gradient(180deg, rgba(0,0,200,1) 0%, rgba(0,0,47,1) 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+    #Main img {
+        position: absolute;
+    }
+
+    #Main #MouseDetect {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        left: 0;
+    }
+
+
+#Timer {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    padding: 15px;
+    font-size: 2rem;
+    background: rgb(0, 0, 0,.5);
+    border: white 5px solid;
+    -moz-border-radius: 15px;
+    -webkit-border-radius: 15px;
+    border-radius: 15px;
+    color:white;
+}
+
+#Score {
+    background: rgb(0, 0, 0,.5);
+    gap: 50px;
+}
+
+.Texte {
+    font-size: 3rem;
+    color: rgba(255, 255, 255, .87);
+}
+
+button {
+    font-size: 3rem;
+    border: white 8px solid;
+    -moz-border-radius: 15px;
+    -webkit-border-radius: 15px;
+    border-radius: 15px;
+    background: #bb2a2a;
+    color: white;
+    padding: 20px;
+}
+
+    button:hover {
+        background: #1e8717;
+    }
+
+#Poison {
+    left: 5%;
+}
+
+.Hamecon {
+    bottom: 100%;
+    -moz-transform-origin: bottom;
+    -ms-transform-origin: bottom;
+    -o-transform-origin: bottom;
+    -webkit-transform-origin: bottom;
+    transform-origin: bottom;
+}

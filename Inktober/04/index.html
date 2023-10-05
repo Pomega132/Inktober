@@ -18,9 +18,17 @@
 </head>
 <body ng-app="Inktober" ng-controller="Controller as ctrl" ng-init="ctrl.Init()" layout="column">
     <h1 class="text-center">Dodge / Esquive</h1>
-    <h4 class="text-center"></h4>
-    <div layout layout-align="center center" flex>
-        <div style="color:red; font-size:5rem">En retard 😋</div>
+    <h4 class="text-center">Esquive les hameçon. Attention, ça accélère toutes les 10s.</h4>
+    <div id="Main" layout layout-align="center center" ng-mousemove="MoveMouse($event)" flex>
+        <img class="Hamecon" ng-repeat="hamecon in Hamecons" src="Images/Hameçon.png" ng-style="GetHameconStyle(hamecon)" />
+        <div id="Timer" ng-if="Game">{{Duree | number : 2}}</div>
+        <img id="Poison" src="Images/Poisson.png" />
+        <div id="MouseDetect" ng-mousemove="MoveMouse($event)" layout>
+            <div id="Score" ng-if="!Game" layout="column" layout-align="center center" flex>
+                <div class="Texte">Vous avez été attrapé au bout de {{Duree | number : 2}} secondes.</div>
+                <button ng-click="StartGame()">Réessayer !</button>
+            </div>
+        </div>
     </div>
 </body>
 </html>
