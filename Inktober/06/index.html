@@ -19,9 +19,21 @@
 <body ng-app="Inktober" ng-controller="Controller as ctrl" ng-init="ctrl.Init()" layout="column">
     <h1 class="text-center"></h1>
     <h4 class="text-center"></h4>
-    <div id="scratchCard">
-        <canvas  id="scratchLayer" width="300" height="200"></canvas>        
-        <div id="message">Gagnez en grattant !</div>
+    <div id="scratchContainer">
+        <svg id="scratchSvg" xmlns="http://www.w3.org/2000/svg" width="400" height="300">
+            <g id="textGroup">
+                <text id="hiddenText" x="50%" y="50%" alignment-baseline="middle" text-anchor="middle" fill="black">Gagner !</text>
+                <!-- Ajoutez d'autres éléments à révéler ici -->
+            </g>
+            <g id="backgroundGroup">
+                <rect width="100%" height="100%" fill="gray" mask="url(#scratchGroup)" />
+                <mask id="scratchGroup">
+                    <rect x="0" y="0" width="100%" height="100%" fill="white" />
+                    <!-- Cercles qui trouent le masque ici -->
+                </mask>
+                <!-- Ajoutez d'autres éléments de fond ici -->
+            </g>
+        </svg>
     </div>
 </body>
 </html>
