@@ -8,61 +8,45 @@ function Controller($scope)
 {
     this.Init = function ()
     {
-        const scratchCard = document.getElementById("scratchCard");
-        const scratchLayer = document.getElementById("scratchLayer");
-        const message = document.getElementById("message");
+        const scratchSvg = document.getElementById("scratchSvg");
+        const scratchGroup = document.getElementById("scratchGroup");
+        const hiddenText = document.getElementById("hiddenText");
 
         let isScratching = false;
 
-        scratchLayer.addEventListener("mousedown", startScratch);
-        scratchLayer.addEventListener("mousemove", scratch);
-        scratchLayer.addEventListener("mouseup", stopScratch);
-        scratchLayer.addEventListener("mouseout", stopScratch);
+        scratchSvg.addEventListener("mousedown", startScratch);
+        scratchSvg.addEventListener("mousemove", scratch);
+        scratchSvg.addEventListener("mouseup", stopScratch);
 
-        /**@type {CanvasRenderingContext2D} */
-        const ctx = scratchLayer.getContext("2d");
-        ctx.fillRect(0, 0, scratchLayer.width, scratchLayer.height)
-
-        function startScratch()
+        function startScratch(e)
         {
             isScratching = true;
-            message.style.display = "none";
+            scratch(e);
         }
 
         function scratch(e)
         {
             if (!isScratching) return;
 
-            const rect = scratchLayer.getBoundingClientRect();
+            const pointSize = 20; // Taille du point à gratter
+            const rect = scratchSvg.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
 
-            const radius = 20; // Taille du pinceau à gratter
+            // Crée un cercle masque autour du point cliqué
+            const mask = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            mask.setAttribute("cx", x);
+            mask.setAttribute("cy", y);
+            mask.setAttribute("r", pointSize);
+            mask.setAttribute("fill", "#000"); // Couleur du masque
 
-
-            ctx.beginPath();
-            ctx.arc(x, y, radius, 0, Math.PI * 2);
-            ctx.fillStyle = "black";
-            ctx.fill();
+            // Applique le masque au groupe de grattage
+            scratchGroup.appendChild(mask);
         }
 
         function stopScratch()
         {
             isScratching = false;
-
-            // Vérifiez si une certaine partie est grattée pour décider si le joueur a gagné
-            const imageData = ctx
-                .getImageData(0, 0, scratchLayer.width, scratchLayer.height)
-                .data;
-
-            const pixels = imageData.filter((value) => value === 0);
-
-            if (pixels.length > 0.6 * (scratchLayer.width * scratchLayer.height))
-            {
-                message.innerText = "Félicitations ! Vous avez gagné !";
-                message.style.display = "block";
-            }
         }
     }
-
 }
