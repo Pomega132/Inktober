@@ -28,131 +28,157 @@
     {
         Day: 6,
         SujetEn: "Golden",
-        SujetFr: "Doré"
+        SujetFr: "Doré",
+        Ignorer: true
     },
     {
         Day: 7,
         SujetEn: "Drip",
-        SujetFr: "Goutte"
+        SujetFr: "Goutte",
+        Ignorer: true
     },
     {
         Day: 8,
         SujetEn: "Toad",
-        SujetFr: "Crapaud"
+        SujetFr: "Crapaud",
+        Ignorer: true
     },
     {
         Day: 9,
         SujetEn: "Bounce",
-        SujetFr: "Rebond"
+        SujetFr: "Rebond",
+        Ignorer: true
     },
     {
         Day: 10,
         SujetEn: "Fortune",
-        SujetFr: "Chance"
+        SujetFr: "Chance",
+        Ignorer: true
     },
     {
         Day: 11,
         SujetEn: "Wander",
-        SujetFr: "Promenade"
+        SujetFr: "Promenade",
+        Ignorer: true
     },
     {
         Day: 12,
         SujetEn: "Spicey",
-        SujetFr: "Épicé"
+        SujetFr: "Épicé",
+        Ignorer: true
     },
     {
         Day: 13,
         SujetEn: "Rise",
-        SujetFr: "Hausse"
+        SujetFr: "Hausse",
+        Ignorer: true
     },
     {
         Day: 14,
         SujetEn: "Castle",
-        SujetFr: "Château"
+        SujetFr: "Château",
+        Ignorer: true
     },
     {
         Day: 15,
         SujetEn: "Dagger",
-        SujetFr: "Poignard"
+        SujetFr: "Poignard",
+        Ignorer: true
     },
     {
         Day: 16,
         SujetEn: "Angel",
-        SujetFr: "Ange"
+        SujetFr: "Ange",
+        Ignorer: true
     },
     {
         Day: 17,
         SujetEn: "Demon",
-        SujetFr: "Démon"
+        SujetFr: "Démon",
+        Ignorer: true
     },
     {
         Day: 18,
         SujetEn: "Saddle",
-        SujetFr: "Selle"
+        SujetFr: "Selle",
+        Ignorer: true
     },
     {
         Day: 19,
         SujetEn: "Plump",
-        SujetFr: "Dodu"
+        SujetFr: "Dodu",
+        Ignorer: true
     },
     {
         Day: 20,
         SujetEn: "Frost",
-        SujetFr: "Gel"
+        SujetFr: "Gel",
+        Ignorer: true
     },
     {
         Day: 21,
         SujetEn: "Chains",
-        SujetFr: "Chaînes"
+        SujetFr: "Chaînes",
+        Ignorer: true
     },
     {
         Day: 22,
         SujetEn: "Scratchy",
-        SujetFr: "Rugueux"
+        SujetFr: "Rugueux",
+        Ignorer: true
     },
     {
         Day: 23,
         SujetEn: "Celestial",
-        SujetFr: "Céleste"
+        SujetFr: "Céleste",
+        Ignorer: true
     },
     {
         Day: 24,
         SujetEn: "Shallow",
-        SujetFr: "Superficiel"
+        SujetFr: "Superficiel",
+        Ignorer: true
     },
     {
         Day: 25,
         SujetEn: "Dangerous",
-        SujetFr: "Dangereux"
+        SujetFr: "Dangereux",
+        Ignorer: true
     },
     {
         Day: 26,
         SujetEn: "Remove",
-        SujetFr: "Enlever"
+        SujetFr: "Enlever",
+        Ignorer: true
     },
     {
         Day: 27,
         SujetEn: "Beast",
-        SujetFr: "Bête"
+        SujetFr: "Bête",
+        Ignorer: true
     },
     {
         Day: 28,
         SujetEn: "Sparkle",
-        SujetFr: "Briller"
+        SujetFr: "Briller",
+        Ignorer: true
     },
     {
         Day: 29,
         SujetEn: "Massive",
-        SujetFr: "Immense"
+        SujetFr: "Immense",
+        Ignorer: true
     },
     {
         Day: 30,
         SujetEn: "Rush",
-        SujetFr: "Pressé"
+        SujetFr: "Pressé",
+        Ignorer: true
     },
     {
         Day: 31,
         SujetEn: "Fire",
-        SujetFr: "Feu"
+        SujetFr: "Feu",
+        Ignorer: true
     }
 ];
