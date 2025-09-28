@@ -1,4 +1,6 @@
-@page "/"
+﻿@page "/"
+
+@using Webtober2025.Client.Icons
 
 <PageTitle>Webtober</PageTitle>
 
@@ -12,12 +14,16 @@
 	</MudText>
 	<MudPaper>
 		<MudStack Row="true" Spacing="2" Class="pa-4">
-			<a class="svg-hover" href="/2025">
-				<Webtober2025.Client.Icons._2025 />
+			<a href="/2025" @onmouseenter="@(() => _Hover = 2025)" @onmouseleave="@(() => _Hover = null)">
+				<_2025 Hover="_Hover == 2025" />
 			</a>
-			<a class="svg-hover" href="/2023">
-				<Webtober2025.Client.Icons._2023 />
+			<a href="/2023" @onmouseenter="@(() => _Hover = 2023)" @onmouseleave="@(() => _Hover = null)">
+				<_2023 Hover="_Hover == 2023" />
 			</a>
 		</MudStack>
 	</MudPaper>
 </MudContainer>
+
+@code {
+	int? _Hover { get; set; } = null; 
+}

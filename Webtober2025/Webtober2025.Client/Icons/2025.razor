@@ -1,58 +1,62 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="8 8 240 240" role="img" aria-labelledby="title25 desc25" height="150" width="150">
-  <title id="title25">Logo 2025 - Anneau cinétique</title>
-  <desc id="desc25">Un anneau incliné avec un segment ouvert et une barre traversante, en dégradé indigo vers cyan, sur un fond sombre arrondi.</desc>
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="8 8 240 240" role="img" aria-labelledby="title25 desc25" height="150" width="150">
+    <title id="title25">Logo 2025 - Anneau cinétique</title>
+    <desc id="desc25">Un anneau incliné avec un segment ouvert et une barre traversante, en dégradé indigo vers cyan, sur un fond sombre arrondi.</desc>
 
-  <style>
-    :root {
-      --bg:#0b1220;
-      --txt:#c9d4ff;
-      --grad-start:#4f46e5;
-      --grad-end:#06b6d4;
-      --corner:28;
-      --tilt:-20;
-    }
-    text { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji","Segoe UI Emoji"; }
-  </style>
+    <style>
+        text {
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji","Segoe UI Emoji";
+        }
+    </style>
 
-  <defs>
-    <linearGradient id="g25" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="var(--grad-start)"/>
-      <stop offset="100%" stop-color="var(--grad-end)"/>
-    </linearGradient>
+    <defs>
+        <linearGradient id="g25" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#4f46e5" />
+            <stop offset="100%" stop-color="#06b6d4" />
+        </linearGradient>
 
-    <filter id="shadow25" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur"/>
-      <feOffset dy="8" result="offset"/>
-      <feColorMatrix in="offset" type="matrix"
-        values="0 0 0 0 0.02  0 0 0 0 0.06  0 0 0 0 0.14  0 0 0 0.35 0" result="shadow"/>
-      <feMerge>
-        <feMergeNode in="shadow"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
+        <filter id="shadow25" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur" />
+            <feOffset dy="8" result="offset" />
+            <feColorMatrix in="offset" type="matrix"
+                           values="0 0 0 0 0.02  0 0 0 0 0.06  0 0 0 0 0.14  0 0 0 0.35 0" result="shadow" />
+            <feMerge>
+                <feMergeNode in="shadow" />
+                <feMergeNode in="SourceGraphic" />
+            </feMerge>
+        </filter>
 
-    <!-- Masque pour créer l'ouverture dans l'anneau -->
-    <mask id="gap25">
-      <!-- tout visible -->
-      <rect x="0" y="0" width="256" height="256" fill="white"/>
-      <!-- on "coupe" un segment en peignant en noir -->
-      <rect x="152" y="38" width="80" height="36" rx="18" fill="black" transform="rotate(var(--tilt) 192 56)"/>
-    </mask>
-  </defs>
+        <!-- Masque pour créer l'ouverture dans l'anneau -->
+        <mask id="gap25">
+            <!-- tout visible -->
+            <rect x="0" y="0" width="256" height="256" fill="white" />
+            <!-- on "coupe" un segment en peignant en noir -->
+            <rect x="152" y="38" width="80" height="36" rx="18" fill="black" transform="rotate(-20 192 56)" />
+        </mask>
+    </defs>
 
-  <!-- Fond -->
-  <rect x="8" y="8" width="240" height="240" rx="var(--corner)" fill="var(--bg)"/>
+    <!-- Fond -->
+    <rect x="8" y="8" width="240" height="240" rx="28" fill="@BgColor" />
 
-  <!-- Emblème : anneau + barre -->
-  <g filter="url(#shadow25)" transform="translate(128 112) rotate(var(--tilt)) translate(-128 -112)">
-    <!-- anneau -->
-    <circle cx="128" cy="112" r="62" fill="none" stroke="url(#g25)" stroke-width="24" mask="url(#gap25)"/>
-    <!-- barre traversante -->
-    <rect x="96" y="84" width="88" height="24" rx="12" fill="url(#g25)"/>
-    <!-- accent -->
-    <circle cx="72" cy="148" r="8" fill="url(#g25)"/>
-  </g>
+    <!-- Emblème : anneau + barre -->
+    <g filter="url(#shadow25)" transform="translate(128 112) rotate(-20) translate(-128 -112)">
+        <!-- anneau -->
+        <circle cx="128" cy="112" r="62" fill="none" stroke="url(#g25)" stroke-width="24" mask="url(#gap25)" />
+        <!-- barre traversante -->
+        <rect x="96" y="84" width="88" height="24" rx="12" fill="url(#g25)" />
+        <!-- accent -->
+        <circle cx="72" cy="148" r="8" fill="url(#g25)" />
+    </g>
 
-  <!-- Année -->
-  <text x="208" y="220" font-size="28" text-anchor="end" fill="var(--txt)" letter-spacing="1.5">2025</text>
+    <!-- Année -->
+    <text x="208" y="220" font-size="28" text-anchor="end" fill="#c9d4ff" letter-spacing="1.5">2025</text>
 </svg>
+
+@code {
+    public const string DEFAULT_BG_COLOR = "#070c14";
+    public const string HOVER_BG_COLOR = "#0e1829";
+
+    [Parameter]
+    public bool Hover { get; set; } = false;
+
+    public string? BgColor { get => Hover ? HOVER_BG_COLOR : DEFAULT_BG_COLOR; }
+}
