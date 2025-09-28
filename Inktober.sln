@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inktober", "Inktober\Inktob
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tools", "..\Bibliotheque\Tools\Tools.csproj", "{30099ADF-1F57-4FDD-AA15-2C5939EEA227}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Webtober2025", "Webtober2025\Webtober2025\Webtober2025.csproj", "{DD29550B-03D6-46A4-BDE1-D9936BE61FF3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Webtober2025.Client", "Webtober2025\Webtober2025.Client\Webtober2025.Client.csproj", "{9F76B4D5-5A82-4197-842A-2B90031C8B6C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{30099ADF-1F57-4FDD-AA15-2C5939EEA227}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{30099ADF-1F57-4FDD-AA15-2C5939EEA227}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{30099ADF-1F57-4FDD-AA15-2C5939EEA227}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DD29550B-03D6-46A4-BDE1-D9936BE61FF3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD29550B-03D6-46A4-BDE1-D9936BE61FF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD29550B-03D6-46A4-BDE1-D9936BE61FF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD29550B-03D6-46A4-BDE1-D9936BE61FF3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F76B4D5-5A82-4197-842A-2B90031C8B6C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F76B4D5-5A82-4197-842A-2B90031C8B6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F76B4D5-5A82-4197-842A-2B90031C8B6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F76B4D5-5A82-4197-842A-2B90031C8B6C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
