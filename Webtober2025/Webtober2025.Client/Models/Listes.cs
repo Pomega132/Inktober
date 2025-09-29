@@ -16,7 +16,7 @@ namespace Webtober2025.Client.Models
 			"IMPRUDENT",
 			"LOURD",
 			"BALAYER",
-			"PIQûre",
+			"PIQÛRE",
 			"DÉCHIRÉ",
 			"BOIRE",
 			"TRONC",
