@@ -1,9 +1,37 @@
 ﻿@page "/2025"
+@using Webtober2025.Client.Models
 
-<MudText Typo="Typo.h1">Année 2025</MudText>
+<MudText Typo="Typo.h2" Align="Align.Center">Année 2025</MudText>
 
-
+<div class="calendar flex-1">
+	<div></div>
+	<div></div>
+	@for (int day = 1; day <= 31; day++)
+	{
+		int thisDay = day; // Capture the current value of day
+		<a class="day d-flex @DisabledClass(thisDay)" href="/2025/@thisDay" disabled="@IsDisabled(thisDay)">
+			<MudPaper Class="d-flex flex-1 flex-column justify-center" Outlined="true" Elevation="4">
+				<MudText Typo="Typo.h6" Align="Align.Center">Jour @thisDay</MudText>
+				<MudText Typo="Typo.body2" Align="Align.Center">@Listes.THEMES_2025[thisDay - 1]</MudText>
+			</MudPaper>
+		</a>
+	}
+</div>
 
 @code {
+	string DisabledClass(int day)
+	{
+		if (IsDisabled(day))
+		{
+			return "opacity-50 pointer-events-none";
+		}
 
+		return "";
+	}
+
+	bool IsDisabled(int day)
+	{
+		DateTime date = new DateTime(2025, 10, day);
+		return date > DateTime.Now;
+	}
 }

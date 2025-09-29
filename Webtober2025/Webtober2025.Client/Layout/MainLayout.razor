@@ -19,8 +19,8 @@
 	<MudIconButton Icon="@(_DarkMode ? Icons.Material.Filled.DarkMode : Icons.Material.Filled.LightMode)" Color="Color.Inherit" OnClick="() => _DarkMode = !_DarkMode" />
 </MudAppBar>
 
-<MudMainContent Class="mt-6 pt-6">    
-@Body
+<MudMainContent Class="mud-height-full d-flex flex-column">
+    @Body
 </MudMainContent>
 
 <div id="blazor-error-ui" data-nosnippet>

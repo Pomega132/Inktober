@@ -1,0 +1,12 @@
+﻿.calendar {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+}
+
+::deep .day {
+    min-height: 6rem;
+}
+
