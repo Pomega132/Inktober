@@ -1,0 +1,56 @@
+﻿@using Webtober2025.Client.Models._01
+@inject NavigationManager Navigation
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h4">Créé ou rejoindre une partie</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTextField @bind-Value="_PlayerName" Required="true" Immediate="true" Label="Nom du joueur" />
+        <MudStack Row="true">
+            <MudPaper Class="pa-4 d-flex flex-column flex-1 justify-space-between gap-5">
+                <MudText Align="Align.Center" Typo="Typo.h6">Créer une partie</MudText>
+                <MudNumericField @bind-Value="_MaxPlayers" Required="true" Min="2" Max="6" Label="Nombre de joueurs (2-6)" />
+                <MudTextField @bind-Value="_Password" Class="justify-center" InputType="InputType.Password" Label="Mot de passe (optionnel)" />
+                <div class="d-flex justify-center">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@string.IsNullOrWhiteSpace(_PlayerName)" OnClick="Create">Créer</MudButton>
+                </div>
+            </MudPaper>
+            <MudDivider Vertical="true" />
+            <MudPaper Class="pa-4 d-flex flex-column flex-1 justify-space-between gap-5">
+                <MudText Align="Align.Center" Typo="Typo.h6">Rejoindre une partie</MudText>
+                <MudTextField @bind-Value="_GameKey" Immediate="true" Required="true" Label="Clé de la partie" />
+                <MudTextField @bind-Value="_Password" InputType="InputType.Password" Label="Mot de passe (optionnel)" />
+                <div class="d-flex justify-center">
+                    <MudButton Variant="Variant.Filled" Disabled="@(string.IsNullOrWhiteSpace(_PlayerName) || string.IsNullOrWhiteSpace(_GameKey))" Color="Color.Primary" OnClick="Join">Rejoindre</MudButton>
+                </div>
+            </MudPaper>
+        </MudStack>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public HubConnection? HubConnection{ get; set; }
+
+    private string? _PlayerName { get; set; }
+    private string? _Password { get; set; }
+    private int _MaxPlayers { get; set; } = 2;
+    private string? _GameKey { get; set; }
+
+    private async Task Create()
+    {
+        if (HubConnection is not null)
+        {
+            await HubConnection.SendAsync(nameof(GameHub.CreateServer), _PlayerName, _Password, _MaxPlayers);
+        }
+    }
+
+    private void Join()
+    {
+        MudDialog.Close(DialogResult.Ok(new { GameKey = _GameKey, Password = _Password, IsCreate = false }));
+    }
+}

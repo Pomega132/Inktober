@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+﻿using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MudBlazor.Services;
 
 namespace Webtober2025.Client
@@ -8,7 +8,10 @@ namespace Webtober2025.Client
         static async Task Main(string[] args)
         {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
-            builder.Services.AddMudServices();
+            builder.Services.AddMudServices(option =>
+            {
+                option.SnackbarConfiguration.PositionClass = MudBlazor.Defaults.Classes.Position.TopRight;
+            });
 
             await builder.Build().RunAsync();
         }

@@ -1,5 +1,8 @@
-using MudBlazor.Services;
+﻿using MudBlazor.Services;
 using Webtober2025.Components;
+using Microsoft.AspNetCore.ResponseCompression;
+using Webtober2025.Client.Models;
+using Webtober2025.Client.Models._01;
 
 namespace Webtober2025
 {
@@ -15,6 +18,13 @@ namespace Webtober2025
                 .AddInteractiveWebAssemblyComponents();
 
             builder.Services.AddMudServices();
+            builder.Services.AddSignalR();
+
+            builder.Services.AddResponseCompression(opts =>
+            {
+                opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+                    ["application/octet-stream"]);
+            });
 
             var app = builder.Build();
 
@@ -31,6 +41,8 @@ namespace Webtober2025
             }
 
             app.UseHttpsRedirection();
+            app.UseResponseCompression();
+            app.MapHub<GameHub>("2025/01_gamehub");
 
             app.UseAntiforgery();
 

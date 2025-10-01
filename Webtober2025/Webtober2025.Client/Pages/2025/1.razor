@@ -1,7 +1,145 @@
-﻿@page "/2025/1"
+﻿@page "/2025/1/{PlayerKey?}"
+@using Webtober2025.Client.Models._01
+@using Webtober2025.Client.Pages._2025.Templates._01
+
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar SnackbarService
+@implements IAsyncDisposable
 
 <h3>1 - Moustache</h3>
+@if (_Game is not null)
+{
+    <MudText Typo="Typo.h4">ID de la Partie : @_Game.GameKey | @_Game.Players.Count / @_Game.MaxPlayers Joueurs</MudText>
+}
+
+
+<MudStack Row="true">
+
+    <MudPaper Class="flex-1">
+    @if (_InGame)
+    {
+        <Game />
+    }
+    else
+    {
+        <MoustacheCustome HubConnection="_HubConnection" />
+    }
+    </MudPaper>
+
+    <MudPaper>
+        <MudStack>
+            <MudText Typo="Typo.h5">Joueurs :</MudText>
+            @if (_Game is not null)
+            {
+                @foreach (var player in _Game.Players)
+                {
+                    <MudText Typo="Typo.body1">@player.Name @(player.IsReady ? "(Prêt)" : "") @(player.Name == _PlayerName ? "(Vous)" : "")</MudText>
+                }
+            }
+            else
+            {
+                <MudText Typo="Typo.body1">Aucun joueur connecté</MudText>
+            }
+            <MudStack Class="flex-1">
+            </MudStack>
+            <MudStack Row="true">
+                <MudTextField T="string" Label="Message" Variant="Variant.Outlined" Text="@_Message" Lines="3" />
+                <MudIconButton Icon="@Icons.Material.Filled.Send" Color="Color.Primary" Disabled="string.IsNullOrWhiteSpace(_Message)" />
+            </MudStack>
+        </MudStack>
+    </MudPaper>
+
+</MudStack>
+
 
 @code {
+    private HubConnection? _HubConnection { get; set; }
+    private bool _InGame { get; set; } = false;
+    private string? _PlayerName { get; set; }
+    private GameHub.Game? _Game { get; set; }
+    private string _Message { get; set; } = string.Empty;
 
+    [Parameter]
+    public string? PlayerKey { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        _HubConnection = new HubConnectionBuilder()
+             .WithUrl(Navigation.ToAbsoluteUri("/2025/01_gamehub"))
+             .Build();
+
+        _HubConnection.On<string>(GameHub.ACTION_SERVER_JOIN, (playerKey) =>
+        {
+            Navigation.NavigateTo($"/2025/1/{playerKey}");
+        });
+
+        _HubConnection.On<bool, string, string?>(GameHub.ACTION_CONNECT_RESPOSE, (success, playerName, jsonGame) =>
+        {
+            if (success)
+            {
+                var game = string.IsNullOrWhiteSpace(jsonGame) ? null : JsonConvert.DeserializeObject<GameHub.Game>(jsonGame!);
+
+                _PlayerName = playerName;
+                _Game = game;
+                InvokeAsync(StateHasChanged);
+            }
+            else
+            {
+                _PlayerName = null;
+                SnackbarService.Add(playerName, Severity.Error);
+            }
+        });
+
+        _HubConnection.On<string>(GameHub.UPDATE_PLAYER_LIST, (jsonPlayersList) =>
+        {
+            if (_Game is not null)
+            {
+                var players = string.IsNullOrWhiteSpace(jsonPlayersList) ? new List<GameHub.Player>() : JsonConvert.DeserializeObject<List<GameHub.Player>>(jsonPlayersList)!;
+                _Game.Players = players;
+                InvokeAsync(StateHasChanged);
+            }
+        });
+
+        _HubConnection.On("StartGame", () =>
+        {
+            _InGame = true;
+            InvokeAsync(StateHasChanged);
+        });
+
+        await _HubConnection.StartAsync();
+
+        if (PlayerKey is null)
+        {
+            await DialogService.ShowAsync<ServeurCreate>(
+                "Créé ou rejoindre une partie",
+                new DialogParameters<ServeurCreate>
+                                            {
+                        { x => x.HubConnection, _HubConnection },
+                                            },
+                new DialogOptions()
+                    {
+                        CloseButton = false,
+                        MaxWidth = MaxWidth.Medium,
+                        FullWidth = true
+                    }
+            );
+        }
+        else
+        {
+            if (_HubConnection is not null)
+            {
+                await _HubConnection.SendAsync(nameof(GameHub.Connect), PlayerKey);
+            }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_HubConnection is not null)
+        {
+            await _HubConnection.DisposeAsync();
+        }
+    }
 }

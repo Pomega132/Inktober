@@ -12,4 +12,12 @@
     <PackageReference Include="MudBlazor" Version="8.12.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\Images\2025\01\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\Webtober2025.Client\Pages\_Imports.razor" Link="_Imports.razor" />
+  </ItemGroup>
+
 </Project>
