@@ -64,60 +64,60 @@
 
 <script>
     window.PrintWeb = async function(){
-        const el = document.getElementById("Web");
-        if (!el) throw new Error("SVG introuvable");
+    const el = document.getElementById("Web");
+    if (!el) throw new Error("SVG introuvable");
 
-        // Clone propre + assure xmlns + width/height depuis le viewBox
-        const clone = el.cloneNode(true);
-        clone.removeAttribute("style");
-        if (!clone.getAttribute("xmlns")) clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    // Clone propre + assure xmlns + width/height depuis le viewBox
+    const clone = el.cloneNode(true);
+    clone.removeAttribute("style");
+    if (!clone.getAttribute("xmlns")) clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
 
-        if(clone.lastChild.nodeName == "circle")
-            clone.removeChild(clone.lastChild);
+    if(clone.lastChild.nodeName == "circle")
+    clone.removeChild(clone.lastChild);
 
-        const w = el.getBBox().width;
-        const h = el.getBBox().height;
+    const w = el.getBBox().width;
+    const h = el.getBBox().height;
 
-        clone.setAttribute("width",  w);
-        clone.setAttribute("height", h);
+    clone.setAttribute("width", w);
+    clone.setAttribute("height", h);
 
-        // Sérialisation
-        const xml = new XMLSerializer().serializeToString(clone);
-        const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
-        const url = URL.createObjectURL(svgBlob);
+    // Sérialisation
+    const xml = new XMLSerializer().serializeToString(clone);
+    const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
 
-        // Image -> Canvas
-        const img = new Image();
-        // Si votre SVG référence des images externes, décommentez et servez-les avec CORS:
-        // img.crossOrigin = "anonymous";
-        const loadPromise = new Promise((res, rej) => {
-          img.onload = () => res();
-          img.onerror = (e) => rej(e);
-        });
-        img.src = url;
-        await loadPromise;
+    // Image -> Canvas
+    const img = new Image();
+    // Si votre SVG référence des images externes, décommentez et servez-les avec CORS:
+    // img.crossOrigin = "anonymous";
+    const loadPromise = new Promise((res, rej) => {
+    img.onload = () => res();
+    img.onerror = (e) => rej(e);
+    });
+    img.src = url;
+    await loadPromise;
 
-        const canvas = document.createElement("canvas");
-        canvas.width  = Math.round(w);
-        canvas.height = Math.round(h);
+    const canvas = document.createElement("canvas");
+    canvas.width  = Math.round(w);
+    canvas.height = Math.round(h);
 
-        const ctx = canvas.getContext("2d");
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = "high";
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-        URL.revokeObjectURL(url);
+    URL.revokeObjectURL(url);
 
-        // Téléchargement
-        const blob = await new Promise(r => canvas.toBlob(r, "image/png"));
-        const aUrl = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = aUrl;
-        a.download = "Toile.png";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(aUrl);
+    // Téléchargement
+    const blob = await new Promise(r => canvas.toBlob(r, "image/png"));
+    const aUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = aUrl;
+    a.download = "Toile.png";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(aUrl);
     }
 </script>
 
@@ -127,53 +127,67 @@
     ListPoints? _CurrentFil = null;
     Point? _Pointer = null;
     List<ListPoints> _Toile = [
-        new ListPoints(new Point(800, 350), 25)
+        new ListPoints(new Point(780, 351.25), 25)
         {
             new Point(0, 400)
         },
-        new ListPoints(new Point(800, 350), 25)
+        new ListPoints(new Point(780, 341.75), 25)
         {
             new Point(0, 20)
         },
-        new ListPoints(new Point(800, 350), 25)
+        new ListPoints(new Point(790, 341.25), 25)
         {
             new Point(400, 0)
         },
-        new ListPoints(new Point(800, 350), 25)
+        new ListPoints(new Point(801.25, 341.25), 25)
         {
             new Point(850, 0)
         },
-        new ListPoints(new Point(800, 350), 25)
+        new ListPoints(new Point(810, 341.25), 25)
         {
             new Point(1200, 0)
         },
-        new ListPoints(new Point(800, 350), 25)
+        new ListPoints(new Point(820, 341.75), 25)
         {
             new Point(1600, 20)
         },
-        new ListPoints(new Point(800, 350), 25)
+        new ListPoints(new Point(820, 351.25), 25)
         {
             new Point(1600, 400)
         },
-        new ListPoints(new Point(800, 350), 25)
+        new ListPoints(new Point(820, 358.75), 25)
         {
             new Point(1600, 700)
         },
-        new ListPoints(new Point(800, 350), 25)
+        new ListPoints(new Point(810, 361.25), 25)
         {
             new Point(1200, 800)
         },
-        new ListPoints(new Point(800, 350), 25)
+        new ListPoints(new Point(801.25, 361.25), 25)
         {
             new Point(850, 800)
         },
-        new ListPoints(new Point(800, 350), 25)
+        new ListPoints(new Point(790, 361.25), 25)
         {
             new Point(400, 800)
         },
-        new ListPoints(new Point(800, 350), 25)
+        new ListPoints(new Point(780, 358.75), 25)
         {
             new Point(0, 700)
+        },
+        new ListPoints(new Point(780, 351.25), 0)
+        {
+            new Point(780, 341.75),
+            new Point(790, 341.25),
+            new Point(801.25, 341.25),
+            new Point(810, 341.25),
+            new Point(820, 341.75),
+            new Point(820, 351.25),
+            new Point(820, 358.75),
+            new Point(810, 361.25),
+            new Point(801.25, 361.25),
+            new Point(790, 361.25),
+            new Point(780, 358.75),
         },
     ];
     List<ListPoints> _Fils = [];
@@ -277,6 +291,10 @@
             return $"{c1x} {c1y} {c2x} {c2y} {this}";
         }
 
-        public override string ToString() => $"{X} {Y}";
+        public override string ToString()
+        {
+            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+            return $"{X} {Y}";
+        }
     }
 }
