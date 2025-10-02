@@ -1,4 +1,4 @@
-{
+﻿{
   "profiles": {
     "http": {
       "commandName": "Project",
@@ -13,7 +13,7 @@
     "https": {
       "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": "2025",
+      "launchUrl": "2025/2",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },

@@ -1,7 +1,282 @@
-@page "/2025/2"
+﻿@page "/2025/2"
+@using System.Text
 
-<h3>2 - Tisser</h3>
+@inject IJSRuntime JS
+
+
+<MudDrawerContainer Class="mud-height-full relative">
+    <MudDrawer Elevation="3" Anchor="Anchor.Right" Open="true" Fixed="true" Variant="@DrawerVariant.Persistent" Color="Color.Info">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h6">Fils</MudText>
+        </MudDrawerHeader>
+        <MudList T="string">
+            @for (int i = 0; i < _Fils.Count; i++)
+            {
+                int index = i;
+                <MudListItem Text="@GetFilName(i)">
+                    <NestedList>
+                        <MudStack Class="pa-3 ma-2 mud-elevation-3">
+                            <div class="d-flex justify-space-between">
+                                <MudText Typo="Typo.subtitle2">@(_Fils[index].Count + 1) points</MudText>
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Variant="Variant.Outlined" Color="Color.Error" OnClick="() => _Fils.RemoveAt(index)"></MudIconButton>
+                            </div>
+                            <MudSlider @bind-Value="_Fils[index].Elasticity" Min="0" Max="150" Step="5" Color="Color.Secondary">Élasticité : @_Fils[index].Elasticity</MudSlider>
+                        </MudStack>
+                    </NestedList>
+                </MudListItem>
+            }
+        </MudList>
+    </MudDrawer>
+    <MudPaper Class="mud-height-full align-center d-flex flex-1 flex-column justify-center">
+        <div class="d-flex mud-width-full px-5">
+            <div class="d-flex flex-column flex-1 align-center">
+                <MudText Typo="Typo.h5">2 - Tisser</MudText>
+                <MudText Typo="Typo.subtitle1">Tisser votre toile d'araignée en cliquant.</MudText>
+            </div>
+            <MudIconButton Variant="Variant.Outlined" Icon="@Icons.Material.Filled.Print" Size="Size.Large" Color="Color.Info" OnClick="Print" />
+        </div>
+        <svg id="Web" style="width: 80vw; height: 80vh;" class="border" @onclick="Click" @onmousemove="Move" @oncontextmenu="OnRightClick" @oncontextmenu:preventDefault="true" @oncontextmenu:stopPropagation="true">
+            @foreach (var points in _Toile)
+            {
+                <path d="M @points.Origine C @points.GetPath()" fill="none" stroke="lightgray" stroke-dasharray="5,5" />
+            }
+            @foreach (var points in _Fils)
+            {
+                <path d="M @points.Origine C @points.GetPath()" fill="none" stroke="white" />
+            }
+            @if (_CurrentFil is not null)
+            {
+                <path d="M @_CurrentFil.Origine C @_CurrentFil.GetPath()" fill="none" stroke="yellow" />
+
+                @if (_Pointer is not null)
+                {
+                    <path d="M @_CurrentFil.LastPoint C @GetPointerCurve()" fill="none" stroke="red" stroke-dasharray="5,5" />
+                }
+            }
+            @if (_Pointer is not null)
+            {
+                <circle cx="@_Pointer.X" cy="@_Pointer.Y" r="2" fill="red" />
+            }
+        </svg>
+        <MudText Typo="Typo.caption">Clic Gauche : Créer un point | Clic Droit : Terminer le fil</MudText>
+    </MudPaper>
+</MudDrawerContainer>
+
+<script>
+    window.PrintWeb = async function(){
+        const el = document.getElementById("Web");
+        if (!el) throw new Error("SVG introuvable");
+
+        // Clone propre + assure xmlns + width/height depuis le viewBox
+        const clone = el.cloneNode(true);
+        clone.removeAttribute("style");
+        if (!clone.getAttribute("xmlns")) clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+        if(clone.lastChild.nodeName == "circle")
+            clone.removeChild(clone.lastChild);
+
+        const w = el.getBBox().width;
+        const h = el.getBBox().height;
+
+        clone.setAttribute("width",  w);
+        clone.setAttribute("height", h);
+
+        // Sérialisation
+        const xml = new XMLSerializer().serializeToString(clone);
+        const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(svgBlob);
+
+        // Image -> Canvas
+        const img = new Image();
+        // Si votre SVG référence des images externes, décommentez et servez-les avec CORS:
+        // img.crossOrigin = "anonymous";
+        const loadPromise = new Promise((res, rej) => {
+          img.onload = () => res();
+          img.onerror = (e) => rej(e);
+        });
+        img.src = url;
+        await loadPromise;
+
+        const canvas = document.createElement("canvas");
+        canvas.width  = Math.round(w);
+        canvas.height = Math.round(h);
+
+        const ctx = canvas.getContext("2d");
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        URL.revokeObjectURL(url);
+
+        // Téléchargement
+        const blob = await new Promise(r => canvas.toBlob(r, "image/png"));
+        const aUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = aUrl;
+        a.download = "Toile.png";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(aUrl);
+    }
+</script>
 
 @code {
+    const double GRAVITY = 15;
 
+    ListPoints? _CurrentFil = null;
+    Point? _Pointer = null;
+    List<ListPoints> _Toile = [
+        new ListPoints(new Point(800, 350), 25)
+        {
+            new Point(0, 400)
+        },
+        new ListPoints(new Point(800, 350), 25)
+        {
+            new Point(0, 20)
+        },
+        new ListPoints(new Point(800, 350), 25)
+        {
+            new Point(400, 0)
+        },
+        new ListPoints(new Point(800, 350), 25)
+        {
+            new Point(850, 0)
+        },
+        new ListPoints(new Point(800, 350), 25)
+        {
+            new Point(1200, 0)
+        },
+        new ListPoints(new Point(800, 350), 25)
+        {
+            new Point(1600, 20)
+        },
+        new ListPoints(new Point(800, 350), 25)
+        {
+            new Point(1600, 400)
+        },
+        new ListPoints(new Point(800, 350), 25)
+        {
+            new Point(1600, 700)
+        },
+        new ListPoints(new Point(800, 350), 25)
+        {
+            new Point(1200, 800)
+        },
+        new ListPoints(new Point(800, 350), 25)
+        {
+            new Point(850, 800)
+        },
+        new ListPoints(new Point(800, 350), 25)
+        {
+            new Point(400, 800)
+        },
+        new ListPoints(new Point(800, 350), 25)
+        {
+            new Point(0, 700)
+        },
+    ];
+    List<ListPoints> _Fils = [];
+
+    string GetFilName(int index) => $"Fil {index + 1}";
+
+    string GetPointerCurve()
+    {
+        if (_CurrentFil is null || _Pointer is null)
+            return string.Empty;
+        Point lastPoint = _CurrentFil.LastPoint;
+        CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+        double dx = _Pointer.X - lastPoint.X, dy = _Pointer.Y - lastPoint.Y;
+        double c1x = lastPoint.X + (dx / 4);
+        double c1y = lastPoint.Y + GRAVITY + (dy / 4);
+        double c2x = _Pointer.X - (dx / 4);
+        double c2y = _Pointer.Y + GRAVITY - (dy / 4);
+        return $" {c1x} {c1y} {c2x} {c2y} {_Pointer}";
+    }
+
+    void Print() => JS.InvokeVoidAsync("PrintWeb");
+
+    void Click(MouseEventArgs args)
+    {
+        if (args.Button == 0) // Clic gauche
+        {
+            if (_CurrentFil is null)
+                _CurrentFil = new ListPoints(new Point(args.OffsetX, args.OffsetY));
+            else
+                _CurrentFil.Add(new Point(args.OffsetX, args.OffsetY));
+        }
+        // else if (args.Button == 2) // Clic droit
+        // {
+        //     // Prevent propagation
+
+        //     if (_CurrentFil is not null)
+        //     {
+        //         _Fils.Add(_CurrentFil);
+        //         _CurrentFil = null;
+        //     }
+        // }
+    }
+
+    void OnRightClick(MouseEventArgs args)
+    {
+        if (_CurrentFil is not null)
+        {
+            if (_CurrentFil.Any())
+                _Fils.Add(_CurrentFil);
+            _CurrentFil = null;
+        }
+    }
+
+    void Move(MouseEventArgs args)
+    {
+        _Pointer = new Point(args.OffsetX, args.OffsetY);
+    }
+
+    class ListPoints(Point origine, double elasticity = GRAVITY) : List<Point>
+    {
+        public Point Origine { get; set; } = origine;
+        public double Elasticity { get; set; } = elasticity;
+        public Point LastPoint => this.Any() ? this[^1] : Origine;
+
+        public ListPoints Add(double x, double y)
+        {
+            Add(new Point(x, y));
+            return this;
+        }
+
+
+        public string GetPath()
+        {
+            StringBuilder builder = new StringBuilder();
+            Point previousPoint = Origine;
+            foreach (var point in this)
+            {
+                builder.Append($" {point.ToString(previousPoint, Elasticity)}");
+                previousPoint = point;
+            }
+            return builder.ToString();
+        }
+    }
+
+    class Point(double x, double y)
+    {
+        public double X { get; set; } = x;
+        public double Y { get; set; } = y;
+
+        public string ToString(Point previousPoint, double gravity)
+        {
+            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+            // Distance X et Y entre les deux points
+            double dx = X - previousPoint.X, dy = Y - previousPoint.Y;
+
+            double c1x = previousPoint.X + (dx / 4);
+            double c1y = previousPoint.Y + gravity + (dy / 4);
+            double c2x = X - (dx / 4);
+            double c2y = Y + gravity - (dy / 4);
+
+            return $"{c1x} {c1y} {c2x} {c2y} {this}";
+        }
+
+        public override string ToString() => $"{X} {Y}";
+    }
 }
