@@ -10,10 +10,10 @@
     <MudSlider @bind-Value="_Personnage.Hue" Min="0" Max="180" Color="Color.Primary">Couleur</MudSlider>
     <MudSlider @bind-Value="_Personnage.Saturation" Min="0" Max="1" Step="0.02" Color="Color.Primary">Saturation</MudSlider>
     <MudSlider @bind-Value="_Personnage.Lightness" Min="0" Max="1" Step="0.02" Color="Color.Primary">Luminosité</MudSlider>
+    <div class="d-flex justify-center">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Valider">Valider</MudButton>
+    </div>
 </MudPaper>
-<div class="d-flex flex-column justify-center">
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Valider">Valider</MudButton>
-</div>
 
 @code {
     [Parameter]

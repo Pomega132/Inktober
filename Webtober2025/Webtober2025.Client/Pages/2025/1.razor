@@ -5,6 +5,7 @@
 @inject NavigationManager Navigation
 @inject IDialogService DialogService
 @inject ISnackbar SnackbarService
+@inject IJSRuntime JS
 @implements IAsyncDisposable
 
 <h3>1 - Moustache</h3>
@@ -17,18 +18,18 @@
 <MudStack Row="true">
 
     <MudPaper Class="flex-1">
-    @if (_InGame)
-    {
-        <Game />
-    }
-    else
-    {
-        <MoustacheCustome HubConnection="_HubConnection" />
-    }
+        @if (_InGame)
+        {
+            <Game />
+        }
+        else
+        {
+            <MoustacheCustome HubConnection="_HubConnection" />
+        }
     </MudPaper>
 
-    <MudPaper>
-        <MudStack>
+    <MudPaper Class="d-flex">
+        <MudStack Class="flex-1">
             <MudText Typo="Typo.h5">Joueurs :</MudText>
             @if (_Game is not null)
             {
@@ -41,24 +42,44 @@
             {
                 <MudText Typo="Typo.body1">Aucun joueur connecté</MudText>
             }
-            <MudStack Class="flex-1">
+            @if (!_Game?.IsStarted ?? false && _Game.Creator.Id == PlayerKey)
+            {
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="_Game?.Players.Any(p => !p.IsReady) ?? true" OnClick="StartGame">Lancer la partie</MudButton>
+            }
+            <MudStack @ref="ChatMessageStack" Class="flex-1 overflow-auto">
+                @foreach (var message in _Messages)
+                {
+                    <MudText Typo="Typo.body1"><b>@message.Name :</b> @message.Message</MudText>
+                }
             </MudStack>
             <MudStack Row="true">
-                <MudTextField T="string" Label="Message" Variant="Variant.Outlined" Text="@_Message" Lines="3" />
-                <MudIconButton Icon="@Icons.Material.Filled.Send" Color="Color.Primary" Disabled="string.IsNullOrWhiteSpace(_Message)" />
+                <MudTextField @bind-Value="_Message" Label="Message" Variant="Variant.Outlined" Immediate="true" Lines="3" />
+                <div class="d-flex align-center">
+                    <MudIconButton Icon="@Icons.Material.Filled.Send" Color="Color.Primary" Disabled="string.IsNullOrWhiteSpace(_Message)" OnClick="SendMessage" />
+                </div>
             </MudStack>
         </MudStack>
     </MudPaper>
 
 </MudStack>
 
+<script>
+    window.ScrollEnd = (element) => {
+        if (element) {
+            element.scrollTop = element.scrollHeight;
+        }
+    };
+</script>
 
 @code {
+    private MudStack? ChatMessageStack { get; set; }
     private HubConnection? _HubConnection { get; set; }
     private bool _InGame { get; set; } = false;
     private string? _PlayerName { get; set; }
     private GameHub.Game? _Game { get; set; }
+    private List<List<Personnage>>? _Personnages { get; set; }
     private string _Message { get; set; } = string.Empty;
+    private List<(string Name, string Message)> _Messages { get; set; } = new List<(string Name, string Message)>();
 
     [Parameter]
     public string? PlayerKey { get; set; }
@@ -74,6 +95,15 @@
         {
             Navigation.NavigateTo($"/2025/1/{playerKey}");
         });
+
+        _HubConnection.On<string, string>(GameHub.ACTION_RECEIVE_MESSAGE, async (name, message) =>
+        {
+            _Messages.Add((name, message));
+            await InvokeAsync(StateHasChanged);
+            await JS.InvokeVoidAsync("ScrollEnd", ChatMessageStack);
+        });
+
+
 
         _HubConnection.On<bool, string, string?>(GameHub.ACTION_CONNECT_RESPOSE, (success, playerName, jsonGame) =>
         {
@@ -102,9 +132,28 @@
             }
         });
 
-        _HubConnection.On("StartGame", () =>
+        _HubConnection.On(GameHub.ACTION_GAME_STARTED, () =>
         {
             _InGame = true;
+            InvokeAsync(StateHasChanged);
+        });
+
+        _HubConnection.On<string>(GameHub.UPDATE_PERSONNAGES_LIST, (jsonPersonnagesList) =>
+        {
+            if (_Game is not null)
+            {
+                if (!string.IsNullOrWhiteSpace(jsonPersonnagesList))
+                    _Personnages = JsonConvert.DeserializeObject<List<List<Personnage>>>(jsonPersonnagesList)!;
+                InvokeAsync(StateHasChanged);
+            }
+        });
+
+
+
+        _HubConnection.On(GameHub.ACTION_GAME_OVER, () =>
+        {
+            _InGame = false;
+            _Personnages = null;
             InvokeAsync(StateHasChanged);
         });
 
@@ -115,9 +164,9 @@
             await DialogService.ShowAsync<ServeurCreate>(
                 "Créé ou rejoindre une partie",
                 new DialogParameters<ServeurCreate>
-                                            {
+                                                            {
                         { x => x.HubConnection, _HubConnection },
-                                            },
+                                                            },
                 new DialogOptions()
                     {
                         CloseButton = false,
@@ -132,6 +181,23 @@
             {
                 await _HubConnection.SendAsync(nameof(GameHub.Connect), PlayerKey);
             }
+        }
+    }
+
+    async Task SendMessage()
+    {
+        if (_HubConnection is not null)
+        {
+            await _HubConnection.SendAsync(nameof(GameHub.SendMessage), _Message);
+            _Message = string.Empty;
+        }
+    }
+
+    async Task StartGame()
+    {
+        if (_HubConnection is not null)
+        {
+            await _HubConnection.SendAsync(nameof(GameHub.StartGame));
         }
     }
 
