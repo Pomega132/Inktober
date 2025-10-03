@@ -4,6 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +15,7 @@
 
   <ItemGroup>
     <Folder Include="wwwroot\Images\2025\01\" />
+    <Folder Include="wwwroot\Images\2025\03\" />
   </ItemGroup>
 
   <ItemGroup>

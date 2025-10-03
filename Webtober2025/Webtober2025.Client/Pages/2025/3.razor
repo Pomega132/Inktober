@@ -1,7 +1,362 @@
-@page "/2025/3"
+﻿@page "/2025/3"
+@using System.Text
+@using Webtober2025.Client.Models
+
+@inject IJSRuntime JS
+@implements IAsyncDisposable
 
 <h3>3 - Couronne</h3>
 
-@code {
+<MudPaper Class="mud-height-full align-center d-flex flex-1 flex-column justify-center">
+    <svg @ref="_SvgRef" style="width: 80vw; height: 80vh;" class="border">
+        <image href="/Images/2025/03/Courone.png" height="@(_Courone?.Height)px" x="@(_Courone?.X ?? 0)" y="@(_Courone?.Y ?? 0)" style="@_Courone?.GetStyle()" />
+        @foreach (var balle in _Objects.OfType<Balle>())
+        {
+            <image href="@($"/Images/2025/03/{balle.ImageId:000}.png")" height="@(balle.Radius * 2)px" x="@(balle.X)" y="@(balle.Y)" style="@balle.GetStyle()" />
+        }
+    </svg>
+</MudPaper>
 
+<script>
+    window.getBoundingClientRect = (element) => {
+        if (!element) return null;
+            const rect = element.getBoundingClientRect();
+            return {
+            width: rect.width,
+            height: rect.height,
+        };
+    };
+
+    function startWindowMoveWatcher(dotNetHelper) {
+        var LastX = window.screenX, LastY = window.screenY;
+        setInterval(async () => {
+            if (window.screenX !== LastX || window.screenY !== LastY) {
+            var deltaX = window.screenX - LastX;
+            var deltaY = window.screenY - LastY;
+            LastX = window.screenX;
+            LastY = window.screenY;
+            var delta = JSON.stringify({Item1:deltaX, Item2:deltaY});
+            await dotNetHelper.invokeMethodAsync("AddVelocity", delta);
+            }
+        }, 200); // toutes les 200 ms
+    }
+</script>
+
+@code {
+    const double GRAVITY = 0.98;
+    const int MAX_BALLS = 100;
+    (double X_MIN, double X_MAX, double Y_MIN, double Y_MAX) SPAWN_ZONE = (0, 150, 50, 150);
+
+
+    ElementReference _SvgRef { get; set; }
+    Rectancle? _Courone { get; set; }
+    System.Timers.Timer _Timer { get; set; } = new System.Timers.Timer(20);
+    List<PhysicalObject> _Objects { get; set; } = new List<PhysicalObject>();
+    bool _SpawnBalles = false;
+
+    protected override Task OnInitializedAsync()
+    {
+        _Courone = new Rectancle(67, 50) { X = 800.25, Y = 400 };
+        _Objects.Add(_Courone);
+
+        return base.OnInitializedAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("startWindowMoveWatcher", dotNetRef);
+
+            Rect svgRect = await GetBoundingClientRectAsync(_SvgRef) ?? throw new Exception("Impossible de récupérer les dimensions du SVG.");
+
+            SPAWN_ZONE = (0, svgRect.Width - 55, 50, 150);
+            _Timer.Elapsed += Timer_Elapsed;
+            await InvokeAsync(StateHasChanged);
+
+            _Timer.Start();
+        }
+    }
+
+    void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
+    {
+        InvokeAsync(async () =>
+        {
+            var svg = _SvgRef;
+            if (svg.Context is not null)
+            {
+                // Get the size of the SVG element
+                Rect svgRect = await GetBoundingClientRectAsync(svg) ?? throw new Exception("Impossible de récupérer les dimensions du SVG.");
+
+                foreach (var physicalObject in _Objects)
+                {
+                    Rect objRect = physicalObject.GetRect();
+
+                    if (physicalObject.Gravity)
+                    {
+                        physicalObject.VY += GRAVITY;
+                    }
+                    physicalObject.X += physicalObject.VX;
+                    physicalObject.Y += physicalObject.VY;
+                    if (physicalObject.Y + objRect.Height > svgRect.Height)
+                    {
+                        physicalObject.Y = svgRect.Height - objRect.Height;
+                        physicalObject.VY = -physicalObject.VY * 0.7;
+                    }
+                    if (physicalObject.X < 0)
+                    {
+                        physicalObject.X = 0;
+                        physicalObject.VX = -physicalObject.VX * 0.7;
+                    }
+                    if (physicalObject.X + objRect.Width > svgRect.Width)
+                    {
+                        physicalObject.X = svgRect.Width - objRect.Width;
+                        physicalObject.VX = -physicalObject.VX * 0.7;
+                    }
+                }
+
+                // Caltuler les collisions
+                for (int i = 0; i < _Objects.Count; i++)
+                {
+                    var physicalObject = _Objects[i];
+
+                    var ojectsProches = from other in _Objects.Skip(i + 1)
+                                        let distance = double.Hypot(physicalObject.CentreDeRotation.X - other.CentreDeRotation.X, physicalObject.CentreDeRotation.Y - other.CentreDeRotation.Y)
+                                        where distance <= (physicalObject.Radius + other.Radius)
+                                        select other;
+
+                    foreach (var other in ojectsProches)
+                    {
+                        if (physicalObject.Collision(other))
+                        {
+                            var distanceCible = physicalObject.Radius + other.Radius;
+                            var distanceActuelle = double.Hypot(physicalObject.CentreDeRotation.X - other.CentreDeRotation.X, physicalObject.CentreDeRotation.Y - other.CentreDeRotation.Y);
+                            var overlap = distanceCible - distanceActuelle;
+
+                            if (overlap == 0)
+                                continue;
+
+                            var coef = overlap / distanceCible / 2;
+
+                            var distanceX = (physicalObject.CentreDeRotation.X - other.CentreDeRotation.X) * coef;
+                            var distanceY = (physicalObject.CentreDeRotation.Y - other.CentreDeRotation.Y) * coef;
+
+                            physicalObject.VX += distanceX;
+                            physicalObject.VY += distanceY;
+                            other.VX -= distanceX;
+                            other.VY -= distanceY;
+                        }
+                    }
+                }
+
+                if (!_SpawnBalles && _Courone is not null && (_Courone.Y == Math.Round(svgRect.Height - _Courone.Height, 2)))
+                    SpaningBalls();
+
+                StateHasChanged();
+            }
+        });
+    }
+
+    void SpaningBalls()
+    {
+        for (int i = 0; i < MAX_BALLS; i++)
+        {
+            var balle = new Balle
+                {
+                    X = RNG.NextDouble(SPAWN_ZONE.X_MIN, SPAWN_ZONE.X_MAX),
+                    Y = RNG.NextDouble(SPAWN_ZONE.Y_MIN, SPAWN_ZONE.Y_MAX),
+                };
+            _Objects.Add(balle);
+        }
+
+        _SpawnBalles = true;
+    }
+
+    [JSInvokable]
+    public async Task AddVelocity(string jsonDelta)
+    {
+        await InvokeAsync(() =>
+        {
+            (double deltaX, double deltaY) = JsonConvert.DeserializeObject<(double, double)>(jsonDelta);
+
+            foreach (var obj in _Objects)
+            {
+                obj.VX -= deltaX / 10;
+                obj.VY -= deltaY / 10;
+            }
+            StateHasChanged();
+        });
+    }
+
+    async Task<Rect?> GetBoundingClientRectAsync(ElementReference element) => await JS.InvokeAsync<Rect>("getBoundingClientRect", element);
+
+    public ValueTask DisposeAsync()
+    {
+        _Timer.Stop();
+        _Timer.Dispose();
+
+        return ValueTask.CompletedTask;
+    }
+
+    public class Rect
+    {
+        public double Width { get; set; }
+        public double Height { get; set; }
+    }
+
+
+    abstract class PhysicalObject
+    {
+        private double _X { get; set; } = 0;
+        private double _Y { get; set; } = 0;
+
+        public double X { get => Math.Round(_X, 2); set => _X = value; }
+        public double Y { get => Math.Round(_Y, 2); set => _Y = value; }
+        public (double X, double Y) CentreDeRotation => (X + (GetRect().Width / 2), Y + (GetRect().Height / 2));
+        public double Angle { get; set; } = 0;
+        public double VX { get; set; } = 0;
+        public double VY { get; set; } = 0;
+        public double MomentCinetique { get; set; }
+        public bool Gravity { get; set; } = true;
+        public abstract double Radius { get; set; }
+
+        public abstract Rect GetRect();
+        public abstract bool Collision(PhysicalObject other);
+
+        public string GetStyle()
+        {
+            StringBuilder sb = new StringBuilder();
+
+            sb.Append($"transform-origin: {CentreDeRotation.X}px {CentreDeRotation.Y}px;");
+            sb.Append($"transform: rotate({Angle}deg);");
+
+            return sb.ToString();
+        }
+    }
+
+    class Rectancle(double width, double height) : PhysicalObject
+    {
+        private double _Width { get; set; } = width;
+        private double _Height { get; set; } = height;
+
+        public double Width { get => Math.Round(_Width, 2); set => _Width = value; }
+        public double Height { get => Math.Round(_Height, 2); set => _Height = value; }
+
+        public override double Radius { get => double.Hypot(Width / 2, Height / 2); set { } }
+
+        public override Rect GetRect() => new Rect { Width = Width, Height = Height };
+
+        public override bool Collision(PhysicalObject other)
+        {
+            switch (other)
+            {
+                case Rectancle rectancle:
+                    return CollisionRectangle(rectancle);
+                case Balle balle:
+                    return CollisionCircle(balle);
+                default:
+                    return false;
+            }
+        }
+
+        public bool CollisionRectangle(Rectancle other)
+        {
+            var rect = GetRect();
+            var otherRectancleRect = other.GetRect();
+            return !(X > other.X + otherRectancleRect.Width ||
+                     X + rect.Width < other.X ||
+                     Y > other.Y + otherRectancleRect.Height ||
+                     Y + rect.Height < other.Y);
+        }
+
+        public bool CollisionPoint(double x, double y) => x >= X && x <= X + Width && y >= Y && y <= Y + Height;
+
+        public bool CollisionCircle(Balle balle)
+        {
+            var rect = GetRect();
+            // Récupéré la box de la balle
+            var balleRect = balle.GetRect();
+            // Tester si les deux box se chevauchent
+            bool boxOverlap = !(X > balle.X + balleRect.Width ||
+                                X + rect.Width < balle.X ||
+                                Y > balle.Y + balleRect.Height ||
+                                Y + rect.Height < balle.Y);
+
+            // Si les box ne se chevauchent pas, il n'y a pas de collision
+            if (!boxOverlap)
+                return false;
+
+            // Vérifier les collisions avec les coins du rectangle
+            if (balle.CollisionPoint(X, Y))
+                return true;
+            if (balle.CollisionPoint(X + rect.Width, Y))
+                return true;
+            if (balle.CollisionPoint(X, Y + rect.Height))
+                return true;
+            if (balle.CollisionPoint(X + rect.Width, Y + rect.Height))
+                return true;
+
+            // Vérifier si le cercle est à l'intérieur du rectangle
+            if (CollisionPoint(balle.CentreDeRotation.X, balle.CentreDeRotation.Y))
+                return true;
+
+            if (balle.CollisionSegment((X, Y), (X + rect.Width, Y)))
+                return true;
+            if (balle.CollisionSegment((X, Y), (X, Y + rect.Height)))
+                return true;
+            if (balle.CollisionSegment((X + rect.Width, Y), (X + rect.Width, Y + rect.Height)))
+                return true;
+            if (balle.CollisionSegment((X, Y + rect.Height), (X + rect.Width, Y + rect.Height)))
+                return true;
+
+            return false;
+        }
+    }
+
+    class Balle : PhysicalObject
+    {
+        public override double Radius { get; set; } = RNG.NextDouble(10, 30);
+        public int ImageId { get; set; } = RNG.Next(9);
+
+        public override Rect GetRect() => new Rect { Width = Radius * 2, Height = Radius * 2 };
+
+        public override bool Collision(PhysicalObject other)
+        {
+            switch (other)
+            {
+                case Rectancle rectancle:
+                    return CollisionRect(rectancle);
+                case Balle balle:
+                    return CollisionCircle(balle);
+                default:
+                    return false;
+            }
+        }
+
+        public bool CollisionPoint(double x, double y) => double.Hypot(x - CentreDeRotation.X, y - CentreDeRotation.Y) <= Radius;
+
+        public bool CollisionSegment((double X, double Y) start, (double X, double Y) end)
+        {
+            double ACx = CentreDeRotation.X - start.X;
+            double ACy = CentreDeRotation.Y - start.Y;
+            double ABx = end.X - start.X;
+            double ABy = end.Y - start.Y;
+            double BCx = CentreDeRotation.X - end.X;
+            double BCy = CentreDeRotation.Y - end.Y;
+            double s1 = (ACx * ABx) + (ACy * ABy);
+            double s2 = (BCx * ABx) + (BCy * ABy);
+            if (s1 * s2 > 0)
+                return false;
+            return true;
+        }
+
+        public bool CollisionRect(Rectancle other) => other.CollisionCircle(this);
+
+        public bool CollisionCircle(Balle other)
+        {
+            var distance = double.Hypot(CentreDeRotation.X - other.CentreDeRotation.X, CentreDeRotation.Y - other.CentreDeRotation.Y);
+            return distance <= (Radius + other.Radius);
+        }
+    }
 }

@@ -13,6 +13,10 @@
 
         public static double NextDouble() => _RNG.NextDouble();
 
+        public static double NextDouble(double maxValue) => _RNG.NextDouble() * maxValue;
+
+        public static double NextDouble(double minValue, double maxValue) => _RNG.NextDouble() * (maxValue - minValue) + minValue;
+
         public static string KeyGen()
         {
             string key = "";
