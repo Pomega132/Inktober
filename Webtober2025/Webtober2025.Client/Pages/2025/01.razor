@@ -1,4 +1,4 @@
-﻿@page "/2025/1/{PlayerKey?}"
+@page "/2025/1/{PlayerKey?}"
 @using Webtober2025.Client.Models._01
 @using Webtober2025.Client.Pages._2025.Templates._01
 
@@ -8,7 +8,7 @@
 @inject IJSRuntime JS
 @implements IAsyncDisposable
 
-<h3>1 - Moustache</h3>
+<h3>01 - Moustache</h3>
 @if (_Game is not null)
 {
     <MudText Typo="Typo.h4">ID de la Partie : @_Game.GameKey | @_Game.Players.Count / @_Game.MaxPlayers Joueurs</MudText>
