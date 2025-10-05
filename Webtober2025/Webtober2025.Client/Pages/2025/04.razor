@@ -1,6 +1,7 @@
 @page "/2025/4"
 
 @inject IJSRuntime JS
+@implements IAsyncDisposable
 
 <h3>04 - Trouble</h3>
 
@@ -28,7 +29,16 @@
 			.catch(function (err) {
 				console.log("Une erreur s'est produite: " + err);
 			});
+	}
 
+	window.DisposeCam = function(){
+		var video = document.getElementById('video');
+		var stream = video.srcObject;
+		var tracks = stream.getTracks();
+		tracks.forEach(function(track) {
+			track.stop();
+		});
+		video.srcObject = null;
 	}
 
 	var buffer = [];
@@ -98,5 +108,10 @@
 			await JS.InvokeVoidAsync("LoadCam");
 		}
 		await base.OnAfterRenderAsync(firstRender);
+	}
+
+	public async ValueTask DisposeAsync()
+	{
+		await JS.InvokeVoidAsync("DisposeCam");
 	}
 }
