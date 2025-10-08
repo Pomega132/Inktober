@@ -1,5 +1,6 @@
-@page "/2025/5"
+﻿@page "/2025/5"
 @using Webtober2025.Client.Models
+@implements IAsyncDisposable
 
 @inject IJSRuntime JS
 
@@ -142,6 +143,13 @@
 		{
 			Console.Error.WriteLine(e.Message);
 		}
+	}
+
+	public async ValueTask DisposeAsync()
+	{
+		_Timer.Stop();
+		_Timer.Dispose();
+		await Task.CompletedTask;
 	}
 
 	void AddKeyPress(KeyboardEventArgs args)

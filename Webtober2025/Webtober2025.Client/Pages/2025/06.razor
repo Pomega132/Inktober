@@ -1,7 +1,370 @@
-@page "/2025/6"
+﻿@page "/2025/6"
+@using Webtober2025.Client.Models
+@using Webtober2025.Client.Models._06
+@using Block = Webtober2025.Client.Models._06.Block
+
+@implements IAsyncDisposable
+
+@inject IJSRuntime JS
 
 <h3>06 - Percer</h3>
 
-@code {
+<MudPaper Class="flex-1 d-flex justify-space-around">
+    <div>
+        <canvas @ref="_Canvas" id="game" class="border" tabindex="0" width="@(TILE_SIZE*WIDTH_TILES)" height="@(TILE_SIZE*HEIGHT_TILES)" @onmousedown="ClickDown" @onmousemove="MouseMove" @onmouseup="ClickUp"></canvas>
+    </div>
 
+    <MudPaper Class="d-flex flex-column gap-5">
+        <div class="d-flex align-center gap-5">
+            <img src="/Images/2025/06/@(_Inventaire.Pickaxe.Name)_Pickaxe.png" style="width:32px; height:32px;" />
+            <span>@(_Inventaire.Pickaxe.Durability == int.MaxValue ? "∞" : _Inventaire.Pickaxe.Durability.ToString("#,##0"))</span>
+        </div>
+
+        <MudStack Row="true">
+            @foreach (var item in _Inventaire.Items.OrderBy(i => i.Item))
+            {
+                <div class="d-flex flex-column align-center gap-2">
+                    <img src="/Images/2025/06/@(item.Item.GetLabel()).png" style="width:32px; height:32px;" />
+                    <span>@item.Quantity</span>
+                </div>
+            }
+        </MudStack>
+
+        @if (_Inventaire.Has(E_Item.RAW_IRON, 0) || _Inventaire.Has(E_Item.RAW_GOLD, 0))
+        {
+            <div class="d-flex flex-column gap-5">
+                <div class="d-flex justify-center">
+                    <img src="/Images/2025/06/Furnace.png" style="width:32px; height:32px;" />
+                </div>
+                <MudDivider />
+                <div class="d-flex gap-5">
+                    @if (_Inventaire.Has(E_Item.RAW_IRON, 0))
+                    {
+                        <MudButton Variant="Variant.Filled" Size="Size.Large" Disabled="!_Inventaire.Has(E_Item.COAL) || !_Inventaire.Has(E_Item.RAW_IRON, 8)"
+                                   OnClick="@_Inventaire.FoudreIron" Color="Color.Success">
+                            <div class="d-flex">
+                                <div class="d-flex flex-column">
+                                    <div class="d-flex align-center gap-1">
+                                        <img src="/Images/2025/06/Raw_Iron.png" style="width:32px; height:32px;" />
+                                        × 8
+                                    </div>
+                                    <div class="d-flex align-center gap-1">
+                                        <img src="/Images/2025/06/Coal.png" style="width:32px; height:32px;" />
+                                        × 1
+                                    </div>
+                                </div>
+                                <MudIcon Icon="@Icons.Material.Filled.ArrowRightAlt" Size="Size.Large" Class="mx-2 my-auto" />
+                                <div class="d-flex align-center gap-1">
+                                    <img src="/Images/2025/06/Iron_Ingot.png" style="width:32px; height:32px;" />
+                                    × 8
+                                </div>
+                            </div>
+                        </MudButton>
+                    }
+
+                    @if (_Inventaire.Has(E_Item.RAW_GOLD, 0))
+                    {
+                        <MudButton Variant="Variant.Filled" Size="Size.Large" Disabled="!_Inventaire.Has(E_Item.COAL) || !_Inventaire.Has(E_Item.RAW_GOLD, 8)"
+                                   OnClick="@_Inventaire.FoudreGold" Color="Color.Success">
+                            <div class="d-flex">
+                                <div class="d-flex flex-column">
+                                    <div class="d-flex align-center gap-1">
+                                        <img src="/Images/2025/06/Raw_Gold.png" style="width:32px; height:32px;" />
+                                        × 8
+                                    </div>
+                                    <div class="d-flex align-center gap-1">
+                                        <img src="/Images/2025/06/Coal.png" style="width:32px; height:32px;" />
+                                        × 1
+                                    </div>
+                                </div>
+                                <MudIcon Icon="@Icons.Material.Filled.ArrowRightAlt" Size="Size.Large" Class="mx-2 my-auto" />
+                                <div class="d-flex align-center gap-1">
+                                    <img src="/Images/2025/06/Gold_Ingot.png" style="width:32px; height:32px;" />
+                                    × 8
+                                </div>
+                            </div>
+                        </MudButton>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (_Inventaire.Has(E_Item.IRON_INGOT, 0))
+        {
+            <div class="d-flex flex-column gap-5">
+                <div class="d-flex justify-center">
+                    <img src="/Images/2025/06/Crafting_Table.png" style="width:32px; height:32px;" />
+                </div>
+                <MudDivider />
+                <MudButton Variant="Variant.Filled" Size="Size.Large" Disabled="!_Inventaire.PickaxeCanBeUpgrade()" OnClick="_Inventaire.PickaxeUpgrade" Color="Color.Success">
+                    <div class="d-flex">
+                        <div class="d-flex flex-column">
+                            <div class="d-flex align-center gap-1">
+                                @if (_Inventaire.Pickaxe.Type == E_Pickaxe.WOOD)
+                                {
+                                    <img src="/Images/2025/06/Raw_Iron.png" style="width:32px; height:32px;" />
+                                    <text>× 1</text>
+                                }
+                                else if (_Inventaire.Pickaxe.Type == E_Pickaxe.STONE)
+                                {
+                                    <img src="/Images/2025/06/Iron_Ingot.png" style="width:32px; height:32px;" />
+                                    <text>× 5</text>
+                                }
+                                else if (_Inventaire.Pickaxe.Type == E_Pickaxe.IRON)
+                                {
+                                    <img src="/Images/2025/06/Gold_Ingot.png" style="width:32px; height:32px;" />
+                                    <text>× 8</text>
+                                }
+                                else if (_Inventaire.Pickaxe.Type == E_Pickaxe.GOLD)
+                                {
+                                    <img src="/Images/2025/06/Diamond.png" style="width:32px; height:32px;" />
+                                    <text>× 10</text>
+                                }
+                                else if (_Inventaire.Pickaxe.Type == E_Pickaxe.DIAMOND)
+                                {
+                                    <img src="/Images/2025/06/Diamond_Pickaxe.png" style="width:32px; height:32px;" />
+                                }
+                            </div>
+                        </div>
+                        <MudIcon Icon="@Icons.Material.Filled.ArrowRightAlt" Size="Size.Large" Class="mx-2 my-auto" />
+                        <div class="d-flex align-center gap-1">
+                            @if (_Inventaire.Pickaxe.Type == E_Pickaxe.WOOD)
+                            {
+                                <img src="/Images/2025/06/Stone_Pickaxe.png" style="width:32px; height:32px;" />
+                            }
+                            else if (_Inventaire.Pickaxe.Type == E_Pickaxe.STONE)
+                            {
+                                <img src="/Images/2025/06/Iron_Pickaxe.png" style="width:32px; height:32px;" />
+                            }
+                            else if (_Inventaire.Pickaxe.Type == E_Pickaxe.IRON)
+                            {
+                                <img src="/Images/2025/06/Gold_Pickaxe.png" style="width:32px; height:32px;" />
+                            }
+                            else if (_Inventaire.Pickaxe.Type == E_Pickaxe.GOLD)
+                            {
+                                <img src="/Images/2025/06/Diamond_Pickaxe.png" style="width:32px; height:32px;" />
+                            }
+                            else if (_Inventaire.Pickaxe.Type == E_Pickaxe.DIAMOND)
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.NotInterested" Size="Size.Large" Class="mx-2 my-auto" />
+                            }
+                        </div>
+                    </div>
+                </MudButton>
+            </div>
+        }
+    </MudPaper>
+</MudPaper>
+
+<script src="/Scripts/06/GameRender.js" type="module"></script>
+
+@code {
+    const int TILE_SIZE = 64;
+    const int WIDTH_TILES = 17;
+    const int HEIGHT_TILES = 12;
+
+    ElementReference _Canvas { get; set; }
+    System.Timers.Timer _Timer { get; } = new System.Timers.Timer(1000 / 60);
+    Map _Map { get; } = new Map(WIDTH_TILES, HEIGHT_TILES);
+    MouseState _MouseState { get; } = new MouseState();
+    Breaking? _Breaking { get; set; } = null;
+    Inventaire _Inventaire { get; set; } = new Inventaire();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _Map.GenNextCouche();
+            _Map.GenNextCouche();
+            _Map.GenNextCouche();
+
+            await JS.InvokeAsync<object>("InitGame");
+            await _Canvas.FocusAsync();
+            _Timer.Elapsed += (s, e) => InvokeAsync(GameLoop);
+            _Timer.Start();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    async Task GameLoop()
+    {
+        if (_Breaking is not null)
+        {
+            _Breaking.Progress += _Inventaire.Pickaxe.Efficiency;
+            if (_Breaking.Progress >= 10)
+            {
+                E_Block block = _Map[_Breaking.Couche][_Breaking.Position.Y][_Breaking.Position.X];
+                _Inventaire.Add(block.Drop());
+
+
+                _Map.Break(_Breaking.Position.X, _Breaking.Position.Y, _Breaking.Couche);
+                _Breaking = new Breaking(_Breaking.Position, _Map.GetCouche(_Breaking.Position));
+                _Inventaire.PickaxeWornOut();
+            }
+        }
+
+        await JS.InvokeAsync<object>("RenderGame", _Map, _Breaking);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _Timer.Stop();
+        _Timer.Dispose();
+        await Task.CompletedTask;
+    }
+
+    #region Events
+    void ClickDown(MouseEventArgs args)
+    {
+        _MouseState.IsDown = true;
+        _Breaking = new Breaking(_MouseState.BlockPosition, _Map.GetCouche(_MouseState.BlockPosition));
+        Console.WriteLine($"Click Down {args.OffsetX} {args.OffsetY}");
+    }
+
+    void ClickUp(MouseEventArgs args)
+    {
+        _MouseState.IsDown = false;
+        _Breaking = null;
+        Console.WriteLine($"Click Up {args.OffsetX} {args.OffsetY}");
+    }
+
+    void MouseMove(MouseEventArgs args)
+    {
+        _MouseState.Position.X = (int)args.OffsetX;
+        _MouseState.Position.Y = (int)args.OffsetY;
+
+        if (_Breaking is not null)
+        {
+            if (_Breaking.Position != _MouseState.BlockPosition)
+                _Breaking = new Breaking(_MouseState.BlockPosition, _Map.GetCouche(_MouseState.BlockPosition));
+        }
+        else if (_MouseState.IsDown)
+        {
+            _Breaking = new Breaking(_MouseState.BlockPosition, _Map.GetCouche(_MouseState.BlockPosition));
+        }
+        //Console.WriteLine($"Mouse Move {args.OffsetX} {args.OffsetY}");
+    }
+
+    #endregion
+
+    class Map(int width, int heigth) : List<List<List<E_Block>>>
+    {
+        public int Width { get; } = width;
+        public int Heigth { get; } = heigth;
+
+        public int GetCouche(Point point) => GetCouche(point.X, point.Y);
+
+        public int GetCouche(int x, int y)
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                if (this[i][y][x] != E_Block.AIR)
+                    return i;
+            }
+            return Count - 1;
+        }
+
+        public void GenNextCouche()
+        {
+            int depth = Count;
+            IEnumerable<Block> validBlocks = BlockUtility.GetValidBlocks(depth).OrderByDescending(b => b.Probability);
+            List<List<E_Block>> couche = new List<List<E_Block>>();
+            for (int x = 0; x < Heigth; x++)
+            {
+                List<E_Block> line = new List<E_Block>();
+                for (int y = 0; y < Width; y++)
+                {
+                    line.Add(GetRandBlock(validBlocks));
+                }
+                couche.Add(line);
+            }
+            Add(couche);
+        }
+
+        public void Break(int x, int y, int couche)
+        {
+            if (couche < 0 || couche >= Count) return;
+            if (x < 0 || x >= Width) return;
+            if (y < 0 || y >= Heigth) return;
+
+            this[couche][y][x] = E_Block.AIR;
+            if (couche == Count - 1)
+                GenNextCouche();
+        }
+
+        E_Block GetRandBlock(IEnumerable<Block> validBlocks)
+        {
+            IEnumerable<Block> mineraiBlocks = validBlocks.Where(b => b.IsMinerai);
+            IEnumerable<Block> stoneBlocks = validBlocks.Where(b => !b.IsMinerai);
+
+            int totalProba = (int)mineraiBlocks.Sum(b => b.Probability);
+            int rand = RNG.Next(totalProba);
+
+            E_Block eBlock = E_Block.AIR;
+
+            foreach (Block block in mineraiBlocks)
+            {
+                if (rand < block.Probability)
+                {
+                    eBlock = block.Type;
+                    break;
+                }
+                rand -= (int)block.Probability;
+            }
+
+            if (stoneBlocks.Count() > 1)
+            {
+                int stoneProba = (int)stoneBlocks.Sum(b => b.Probability);
+                rand = RNG.Next(stoneProba);
+                foreach (Block block in stoneBlocks)
+                {
+                    if (rand < block.Probability)
+                    {
+                        eBlock |= block.Type;
+                        break;
+                    }
+                    rand -= (int)block.Probability;
+                }
+            }
+            else
+                eBlock |= stoneBlocks.First().Type;
+
+            return eBlock;
+        }
+    }
+
+
+
+    class MouseState
+    {
+        public bool IsDown { get; set; } = false;
+        public Point Position { get; set; } = new Point(0, 0);
+        public Point BlockPosition => new Point(Position.X / TILE_SIZE, Position.Y / TILE_SIZE);
+
+    }
+
+    class Breaking(Point point, int couche)
+    {
+        public double Progress { get; set; } = 0;
+        public string DestroyTexture => $"destroy_stage_{(int)Progress}";
+        public Point Position { get; set; } = point;
+        public int Couche { get; set; } = couche;
+    }
+
+    class Point(int x, int y)
+    {
+        public int X { get; set; } = x;
+        public int Y { get; set; } = y;
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is not Point p) return false;
+            return this == p;
+        }
+        public override int GetHashCode() => HashCode.Combine(X, Y);
+
+        public static bool operator ==(Point a, Point b) => a.X == b.X && a.Y == b.Y;
+        public static bool operator !=(Point a, Point b) => !(a == b);
+    }
 }

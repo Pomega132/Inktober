@@ -1,7 +1,8 @@
-/** @type {GameStateInfo} */
+﻿/** @type {GameStateInfo} */
 var GameState = GameState || {};
 
-window.InitGame = function () {
+window.InitGame = function ()
+{
     GameState = new GameStateInfo();
 }
 
@@ -10,7 +11,8 @@ window.InitGame = function () {
  * @param {any} player
  * @param {Array<Array<number>>} map
  */
-window.GameRender = function (player, map) {
+window.GameRender = function (player, map)
+{
     GameState.Player = player;
 
     GameState.Context.clearRect(0, 0, GameState.Canvas.width, GameState.Canvas.height);
@@ -27,26 +29,32 @@ window.GameRender = function (player, map) {
     //GameState.Context.stroke();
     //GameState.Context.closePath();
 
-    for (var i = 0; i < map.length; i++) {
-        for (var j = 0; j < map[i].length; j++) {
+    for (var i = 0; i < map.length; i++)
+    {
+        for (var j = 0; j < map[i].length; j++)
+        {
 
             // Grass
-            if (map[i][j] == 0 && i + 1 < map.length && (map[i + 1][j] & 1) == 1) {
+            if (map[i][j] == 0 && i + 1 < map.length && (map[i + 1][j] & 1) == 1)
+            {
                 GameState.Context.drawImage(GameState.Terrain.TextureImage,
                     GameState.Terrain.Grass.x * GameState.Terrain.TileSize, GameState.Terrain.Grass.y * GameState.Terrain.TileSize,
                     GameState.Terrain.TileSize, GameState.Terrain.TileSize,
                     j * GameState.Terrain.TileSize, i * GameState.Terrain.TileSize, GameState.Terrain.TileSize, GameState.Terrain.TileSize);
             }
             // Ground
-            else if (map[i][j] == 1) {
-                if (i > 0 && map[i - 1][j] != 1) {
+            else if (map[i][j] == 1)
+            {
+                if (i > 0 && map[i - 1][j] != 1)
+                {
 
                     GameState.Context.drawImage(GameState.Terrain.TextureImage,
                         GameState.Terrain.Ground.x * GameState.Terrain.TileSize, GameState.Terrain.Ground.y * GameState.Terrain.TileSize,
                         GameState.Terrain.TileSize, GameState.Terrain.TileSize,
                         j * GameState.Terrain.TileSize, i * GameState.Terrain.TileSize, GameState.Terrain.TileSize, GameState.Terrain.TileSize);
                 }
-                else {
+                else
+                {
                     // Underground
                     GameState.Context.drawImage(GameState.Terrain.TextureImage,
                         GameState.Terrain.Underground.x * GameState.Terrain.TileSize, GameState.Terrain.Underground.y * GameState.Terrain.TileSize,
@@ -55,14 +63,16 @@ window.GameRender = function (player, map) {
                 }
             }
             // Platform
-            else if (map[i][j] == 3) {
+            else if (map[i][j] == 3)
+            {
                 GameState.Context.drawImage(GameState.Terrain.TextureImage,
                     GameState.Terrain.Platform.x * GameState.Terrain.TileSize, GameState.Terrain.Platform.y * GameState.Terrain.TileSize,
                     GameState.Terrain.TileSize, GameState.Terrain.TileSize,
                     j * GameState.Terrain.TileSize, i * GameState.Terrain.TileSize, GameState.Terrain.TileSize, GameState.Terrain.TileSize);
             }
             // Chest
-            else if (map[i][j] == 4) {
+            else if (map[i][j] == 4)
+            {
                 GameState.Context.drawImage(GameState.Terrain.TextureImage,
                     GameState.Terrain.Chest.x * GameState.Terrain.TileSize, GameState.Terrain.Chest.y * GameState.Terrain.TileSize,
                     GameState.Terrain.TileSize, GameState.Terrain.TileSize,
@@ -77,8 +87,10 @@ window.GameRender = function (player, map) {
     var spritePos = { x: 0, y: 0 };
     var contextTransform = { translateX: GameState.Player.x + 16, translateY: GameState.Player.y + 16, rotate: 0 };
 
-    if (GameState.Player.hasInAir) {
-        if (GameState.Player.vy < 0) {
+    if (GameState.Player.hasInAir)
+    {
+        if (GameState.Player.vy < 0)
+        {
             // Going up
             spritePos = { x: 0, y: 2 };
             if (GameState.Player.toLeft)
@@ -86,7 +98,8 @@ window.GameRender = function (player, map) {
             else
                 contextTransform.rotate = -35 * Math.PI / 180;
         }
-        else {
+        else
+        {
             // Going down
             spritePos = { x: 1, y: 2 };
             if (GameState.Player.toLeft)
@@ -95,13 +108,15 @@ window.GameRender = function (player, map) {
                 contextTransform.rotate = 35 * Math.PI / 180;
         }
     }
-    else if (GameState.LastPlayerState) {
+    else if (GameState.LastPlayerState)
+    {
         if ((GameState.LastPlayerState.vx == 0 && GameState.Player.vx != 0) || (GameState.LastPlayerState.vx != 0 && GameState.Player.vx == 0)) // Change animation
         {
             GameState.LastCall = new Date();
             GameState.SpritePos = 0;
         }
-        else if ((new Date() - GameState.LastCall) > GameState.SpriteDuration) {
+        else if ((new Date() - GameState.LastCall) > GameState.SpriteDuration)
+        {
             GameState.LastCall = new Date();
             GameState.SpritePos = (GameState.SpritePos + 1) % 5;
         }
@@ -145,7 +160,8 @@ window.GameRender = function (player, map) {
     GameState.LastPlayerState = JSON.parse(JSON.stringify(GameState.Player));
 }
 
-class Terrain {
+class Terrain
+{
     Texture = "/Images/2025/05/tilesetOpenGame.png";
     TileSize = 32;
     Grass = { x: 3, y: 3 };
@@ -155,18 +171,21 @@ class Terrain {
     Chest = { x: 1, y: 3 };
     TextureImage = new Image();
 
-    constructor() {
+    constructor()
+    {
         this.TextureImage.src = this.Texture;
     }
 }
 
-class GameStateInfo {
+class GameStateInfo
+{
     Bg = "/Images/2025/05/Forest Pass/bgcolor.png"
     DeerSrc = "/Images/2025/05/deer male calciumtrice.png";
     WalkSpriteDuration = 100; // ms
     IdleSpriteDuration = 800; // ms
 
-    constructor() {
+    constructor()
+    {
         /** @type {HTMLCanvasElement} */
         this.Canvas = document.getElementById("game");
         this.Context = this.Canvas.getContext("2d");
