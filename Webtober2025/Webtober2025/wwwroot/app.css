@@ -1,7 +1,20 @@
-html, body, #app, .main-layout {
+﻿html, body, #app, .main-layout {
     height: 100%;
     margin: 0;
     padding: 0;
+}
+
+/* Empêche la sélection pendant le drag */
+[draggable="true"] {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Le chiffre à l'intérieur du poids ne capte pas la souris */
+svg text {
+    user-select: none;
+    -webkit-user-select: none;
+    pointer-events: none; /* clé: le <text> ne reçoit plus le mousedown */
 }
 
 .opacity-50 {
