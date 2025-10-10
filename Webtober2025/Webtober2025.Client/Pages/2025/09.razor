@@ -2,131 +2,286 @@
 @using Webtober2025.Client.Models
 @using Webtober2025.Client.Pages._2025.Templates._09
 
+@inject IDialogService DialogService
+
 <h3>09 - Lourd</h3>
 
-<MudPaper Class="d-flex justify-space-between gap-5">
-    <MudPaper Class="d-flex flex-1 align-start gap-5" @ondrop="() => Drop(1)" dropzone="true" @ondragover:preventDefault="true">
+<MudPaper Class="d-flex justify-space-between gap-5" @onmousemove="GetMousePos">
+    <MudPaper Class="d-flex flex-1 align-content-start flex-wrap gap-5" @onclick="() => Drop(1)">
         @foreach (var poids in PoidsList.Where(p => p.Position == 1))
         {
             <Poids Index="@poids.Index" OnDrag="DragPoinds" />
         }
     </MudPaper>
 
-    <svg viewBox="0 0 1122 1122" x="0px" y="0px" height="800px">
-        <g id="Objects">
-            <g>
-                <rect height="435.36" style="fill:#9B7A64;" width="21.937" x="544.375" y="402.983" />
+    <div class="d-flex flex-column align-center">
+        <svg viewBox="0 0 1122 1122" x="0px" y="0px" height="700px">
+            <g id="Objects">
                 <g>
-                    <path d="M664.991,887.31H447.196v-7.639c0-25.519,28.406-46.206,63.448-46.206h90.899       c35.041,0,63.448,20.687,63.448,46.206V887.31z" style="fill:#9B7A64;" />
-                    <path d="M681.064,887.31H431.123v-2.174c0-9.452,7.662-17.114,17.114-17.114H663.95       c9.452,0,17.114,7.662,17.114,17.114V887.31z" style="fill:#B28A6B;" />
-                </g>
-            </g>
-            <g>
-                <path d="M826.961,392.873l-535.69,0.659c-6.618,0.008-11.988-3.791-11.994-8.486l0-0.172     c-0.006-4.695,5.355-8.508,11.973-8.516l535.69-0.659c6.618-0.008,11.988,3.791,11.994,8.486l0,0.172     C838.94,389.052,833.58,392.865,826.961,392.873z" style="fill:#B28A6B;" />
-                <path d="M578.14,386.152c0.015-8.118-4.213-15.23-10.56-19.227c-0.394-0.248-0.64-0.67-0.64-1.136      l-0.102-119.875c0.001-0.424-0.033-0.936-0.096-1.523c-1.412-13.145-20.996-12.843-21.784,0.355      c-0.013,0.225-0.02,0.433-0.021,0.623l-0.22,120.377c-0.001,0.467-0.249,0.89-0.644,1.137      c-6.36,3.974-10.613,11.069-10.628,19.187c-0.015,8.118,4.212,15.229,10.558,19.226c0.395,0.249,0.641,0.673,0.64,1.139      l-0.039,21.581c-0.005,2.807,8.034,25.929,11.065,25.935c2.652,0.005,11.155-23.383,11.161-26.652l0.038-20.823      c0.001-0.467,0.249-0.89,0.645-1.137C573.872,401.365,578.125,394.27,578.14,386.152z" style="fill:#B28A6B;" />
-                <path d="M564.358,384.567c0.908,6.003-4.196,11.089-10.196,10.159c-3.739-0.58-6.79-3.642-7.356-7.383      c-0.908-6.003,4.196-11.089,10.196-10.159C560.741,377.763,563.792,380.826,564.358,384.567z" style="fill:#E2B74B;" />
-            </g>
-            <g dropzone="true" @ondragover:preventDefault="true" @ondrop="() => Drop(2)">
-                <g transform="translate(142, 528)">
-                    @{
-                        int i = 0;
-                        foreach (var poids in PoidsList.Where(p => p.Position == 2))
-                        {
-                            <Poids Index="@poids.Index" X="GetXPos(i, PoidsList.Where(p => p.Position == 2).Count())" OnDrag="DragPoinds" />
-                            i++;
-                        }
-                    }
-                </g>
-                <g>
-                    <ellipse cx="287.224" cy="386.085" rx="17.024" ry="18.977" style="fill:#B28A6B;" transform="matrix(0.0018 -1 1 0.0018 -99.3896 672.5978)" />
+                    <rect height="435.36" style="fill:#9B7A64;" width="21.937" x="544.375" y="402.983" />
                     <g>
-                        <g>
-                            <path d="M287.194,385.112c30.142,66.601,60.285,133.201,90.427,199.802        c8.046,17.779,16.092,35.557,24.139,53.336c1.957,4.325-4.057,7.725-6.004,3.422        c-30.142-66.601-60.285-133.201-90.427-199.802c-8.046-17.779-16.092-35.557-24.139-53.336        C279.233,384.208,285.246,380.808,287.194,385.112L287.194,385.112z" style="fill:#B28A6B;" />
-                        </g>
-                        <g>
-                            <path d="M287.358,385.112c-30.386,66.49-60.772,132.98-91.158,199.47        c-8.111,17.749-16.223,35.498-24.334,53.247c-1.973,4.318,4.028,7.74,5.992,3.443c30.386-66.49,60.772-132.98,91.158-199.47        c8.111-17.749,16.223-35.498,24.334-53.247C295.323,384.238,289.322,380.815,287.358,385.112L287.358,385.112z" style="fill:#B28A6B;" />
-                        </g>
-                        <g>
-                            <path d="M283.894,391.354c-0.137,74.812-0.274,149.623-0.411,224.435        c-0.012,6.759-0.025,13.517-0.037,20.276c-0.009,4.886,6.658,4.898,6.667,0.012c0.137-74.812,0.274-149.623,0.411-224.435        c0.012-6.759,0.025-13.517,0.037-20.276C290.569,386.481,283.903,386.469,283.894,391.354L283.894,391.354z" style="fill:#B28A6B;" />
-                        </g>
+                        <path d="M664.991,887.31H447.196v-7.639c0-25.519,28.406-46.206,63.448-46.206h90.899       c35.041,0,63.448,20.687,63.448,46.206V887.31z" style="fill:#9B7A64;" />
+                        <path d="M681.064,887.31H431.123v-2.174c0-9.452,7.662-17.114,17.114-17.114H663.95       c9.452,0,17.114,7.662,17.114,17.114V887.31z" style="fill:#B28A6B;" />
                     </g>
                 </g>
-                <g>
-                    <path d="M150.368,641.456h271.129l-0.235,0.828c-6.913,24.382-23.398,40.26-41.656,40.122l-188.221-1.422      c-17.818-0.135-33.882-15.506-40.901-39.135L150.368,641.456z" style="fill:#E2B74B;" />
-                    <path d="M424.929,648.012H146.937c-3.076,0-5.569-2.906-5.569-6.491v-0.131      c0-3.585,2.493-6.491,5.569-6.491h277.992c3.076,0,5.569,2.906,5.569,6.491v0.131      C430.498,645.106,428.005,648.012,424.929,648.012z" style="fill:#E2B74B;" />
+                <g style="transition: 1s; transform-origin: 50% 34.3%; transform:@_Pesee.GetRotation()">
+                    <path d="M826.961,392.873l-535.69,0.659c-6.618,0.008-11.988-3.791-11.994-8.486l0-0.172     c-0.006-4.695,5.355-8.508,11.973-8.516l535.69-0.659c6.618-0.008,11.988,3.791,11.994,8.486l0,0.172     C838.94,389.052,833.58,392.865,826.961,392.873z" style="fill:#B28A6B;" />
+                    <path d="M578.14,386.152c0.015-8.118-4.213-15.23-10.56-19.227c-0.394-0.248-0.64-0.67-0.64-1.136      l-0.102-119.875c0.001-0.424-0.033-0.936-0.096-1.523c-1.412-13.145-20.996-12.843-21.784,0.355      c-0.013,0.225-0.02,0.433-0.021,0.623l-0.22,120.377c-0.001,0.467-0.249,0.89-0.644,1.137      c-6.36,3.974-10.613,11.069-10.628,19.187c-0.015,8.118,4.212,15.229,10.558,19.226c0.395,0.249,0.641,0.673,0.64,1.139      l-0.039,21.581c-0.005,2.807,8.034,25.929,11.065,25.935c2.652,0.005,11.155-23.383,11.161-26.652l0.038-20.823      c0.001-0.467,0.249-0.89,0.645-1.137C573.872,401.365,578.125,394.27,578.14,386.152z" style="fill:#B28A6B;" />
+                    <path d="M564.358,384.567c0.908,6.003-4.196,11.089-10.196,10.159c-3.739-0.58-6.79-3.642-7.356-7.383      c-0.908-6.003,4.196-11.089,10.196-10.159C560.741,377.763,563.792,380.826,564.358,384.567z" style="fill:#E2B74B;" />
                 </g>
-                <path d="M419.238,648.207c0,0-9.417,28.667-34.75,34l-162.25-1.167c0,0,125.333-2,148-12    c22.667-10,37-20.333,37-20.333L419.238,648.207z" style="opacity:0.08;fill:#272525;" />
-            </g>
-            <g>
-                <g transform="translate(685, 528)">
-                    @{
-                        int j = 0;
-                        foreach (var poids in PoidsList.Where(p => p.Position == 3))
-                        {
-                            <Poids Index="@poids.Index" X="GetXPos(j, PoidsList.Where(p => p.Position == 3).Count())" OnDrag="DragPoinds" />
-                            j++;
+                <g @onclick="() => Drop(2)" transform="@_Pesee.GetTransltionGauche()" style="transition: 1s">
+                    <g transform="translate(142, 528)">
+                        @{
+                            int i = 0;
+                            foreach (var poids in PoidsList.Where(p => p.Position == 2))
+                            {
+                                <Poids Index="@poids.Index" X="GetXPos(i, PoidsList.Where(p => p.Position == 2).Count())" OnDrag="DragPoinds" />
+                                i++;
+                            }
                         }
-                    }
-                </g>
-                <g>
-                    <ellipse cx="830.714" cy="386.085" rx="17.024" ry="18.977" style="fill:#B28A6B;" transform="matrix(0.0018 -1 1 0.0018 443.1097 1216.0914)" />
+                    </g>
                     <g>
+                        <ellipse cx="287.224" cy="386.085" rx="17.024" ry="18.977" style="fill:#B28A6B;" transform="matrix(0.0018 -1 1 0.0018 -99.3896 672.5978)" />
                         <g>
-                            <path d="M830.684,385.112c30.142,66.601,60.285,133.201,90.427,199.802        c8.046,17.779,16.092,35.557,24.139,53.336c1.957,4.325-4.057,7.725-6.004,3.422        c-30.142-66.601-60.285-133.201-90.427-199.802c-8.046-17.779-16.092-35.557-24.139-53.336        C822.722,384.208,828.736,380.808,830.684,385.112L830.684,385.112z" style="fill:#B28A6B;" />
-                        </g>
-                        <g>
-                            <path d="M830.848,385.112c-30.386,66.49-60.772,132.98-91.158,199.47        c-8.111,17.749-16.222,35.498-24.334,53.247c-1.973,4.318,4.028,7.74,5.992,3.443c30.386-66.49,60.772-132.98,91.158-199.47        c8.111-17.749,16.222-35.498,24.334-53.247C838.813,384.238,832.812,380.815,830.848,385.112L830.848,385.112z" style="fill:#B28A6B;" />
-                        </g>
-                        <g>
-                            <path d="M827.384,391.354c-0.137,74.812-0.274,149.623-0.411,224.435        c-0.012,6.759-0.025,13.517-0.037,20.276c-0.009,4.886,6.658,4.898,6.667,0.012c0.137-74.812,0.274-149.623,0.411-224.435        c0.012-6.759,0.025-13.517,0.037-20.276C834.059,386.481,827.393,386.469,827.384,391.354L827.384,391.354z" style="fill:#B28A6B;" />
+                            <g>
+                                <path d="M287.194,385.112c30.142,66.601,60.285,133.201,90.427,199.802        c8.046,17.779,16.092,35.557,24.139,53.336c1.957,4.325-4.057,7.725-6.004,3.422        c-30.142-66.601-60.285-133.201-90.427-199.802c-8.046-17.779-16.092-35.557-24.139-53.336        C279.233,384.208,285.246,380.808,287.194,385.112L287.194,385.112z" style="fill:#B28A6B;" />
+                            </g>
+                            <g>
+                                <path d="M287.358,385.112c-30.386,66.49-60.772,132.98-91.158,199.47        c-8.111,17.749-16.223,35.498-24.334,53.247c-1.973,4.318,4.028,7.74,5.992,3.443c30.386-66.49,60.772-132.98,91.158-199.47        c8.111-17.749,16.223-35.498,24.334-53.247C295.323,384.238,289.322,380.815,287.358,385.112L287.358,385.112z" style="fill:#B28A6B;" />
+                            </g>
+                            <g>
+                                <path d="M283.894,391.354c-0.137,74.812-0.274,149.623-0.411,224.435        c-0.012,6.759-0.025,13.517-0.037,20.276c-0.009,4.886,6.658,4.898,6.667,0.012c0.137-74.812,0.274-149.623,0.411-224.435        c0.012-6.759,0.025-13.517,0.037-20.276C290.569,386.481,283.903,386.469,283.894,391.354L283.894,391.354z" style="fill:#B28A6B;" />
+                            </g>
                         </g>
                     </g>
+                    <g>
+                        <path d="M150.368,641.456h271.129l-0.235,0.828c-6.913,24.382-23.398,40.26-41.656,40.122l-188.221-1.422      c-17.818-0.135-33.882-15.506-40.901-39.135L150.368,641.456z" style="fill:#E2B74B;" />
+                        <path d="M424.929,648.012H146.937c-3.076,0-5.569-2.906-5.569-6.491v-0.131      c0-3.585,2.493-6.491,5.569-6.491h277.992c3.076,0,5.569,2.906,5.569,6.491v0.131      C430.498,645.106,428.005,648.012,424.929,648.012z" style="fill:#E2B74B;" />
+                    </g>
+                    <path d="M419.238,648.207c0,0-9.417,28.667-34.75,34l-162.25-1.167c0,0,125.333-2,148-12    c22.667-10,37-20.333,37-20.333L419.238,648.207z" style="opacity:0.08;fill:#272525;" />
                 </g>
-                <g>
-                    <path d="M700.502,642.581h271.129l-0.235,0.828c-6.913,24.382-23.398,40.26-41.656,40.122l-188.221-1.422      c-17.818-0.135-33.882-15.506-40.901-39.135L700.502,642.581z" style="fill:#E2B74B;" />
-                    <path d="M975.063,649.137H697.071c-3.076,0-5.569-2.906-5.569-6.491v-0.131      c0-3.585,2.493-6.491,5.569-6.491h277.992c3.076,0,5.569,2.906,5.569,6.491v0.131      C980.632,646.231,978.138,649.137,975.063,649.137z" style="fill:#E2B74B;" />
+                <g @onclick="() => Drop(3)" transform="@_Pesee.GetTransltionDroite()" style="transition: 1s">
+                    <g transform="translate(685, 528)">
+                        @{
+                            int j = 0;
+                            foreach (var poids in PoidsList.Where(p => p.Position == 3))
+                            {
+                                <Poids Index="@poids.Index" X="GetXPos(j, PoidsList.Where(p => p.Position == 3).Count())" OnDrag="DragPoinds" />
+                                j++;
+                            }
+                        }
+                    </g>
+                    <g>
+                        <ellipse cx="830.714" cy="386.085" rx="17.024" ry="18.977" style="fill:#B28A6B;" transform="matrix(0.0018 -1 1 0.0018 443.1097 1216.0914)" />
+                        <g>
+                            <g>
+                                <path d="M830.684,385.112c30.142,66.601,60.285,133.201,90.427,199.802        c8.046,17.779,16.092,35.557,24.139,53.336c1.957,4.325-4.057,7.725-6.004,3.422        c-30.142-66.601-60.285-133.201-90.427-199.802c-8.046-17.779-16.092-35.557-24.139-53.336        C822.722,384.208,828.736,380.808,830.684,385.112L830.684,385.112z" style="fill:#B28A6B;" />
+                            </g>
+                            <g>
+                                <path d="M830.848,385.112c-30.386,66.49-60.772,132.98-91.158,199.47        c-8.111,17.749-16.222,35.498-24.334,53.247c-1.973,4.318,4.028,7.74,5.992,3.443c30.386-66.49,60.772-132.98,91.158-199.47        c8.111-17.749,16.222-35.498,24.334-53.247C838.813,384.238,832.812,380.815,830.848,385.112L830.848,385.112z" style="fill:#B28A6B;" />
+                            </g>
+                            <g>
+                                <path d="M827.384,391.354c-0.137,74.812-0.274,149.623-0.411,224.435        c-0.012,6.759-0.025,13.517-0.037,20.276c-0.009,4.886,6.658,4.898,6.667,0.012c0.137-74.812,0.274-149.623,0.411-224.435        c0.012-6.759,0.025-13.517,0.037-20.276C834.059,386.481,827.393,386.469,827.384,391.354L827.384,391.354z" style="fill:#B28A6B;" />
+                            </g>
+                        </g>
+                    </g>
+                    <g>
+                        <path d="M700.502,642.581h271.129l-0.235,0.828c-6.913,24.382-23.398,40.26-41.656,40.122l-188.221-1.422      c-17.818-0.135-33.882-15.506-40.901-39.135L700.502,642.581z" style="fill:#E2B74B;" />
+                        <path d="M975.063,649.137H697.071c-3.076,0-5.569-2.906-5.569-6.491v-0.131      c0-3.585,2.493-6.491,5.569-6.491h277.992c3.076,0,5.569,2.906,5.569,6.491v0.131      C980.632,646.231,978.138,649.137,975.063,649.137z" style="fill:#E2B74B;" />
+                    </g>
+                    <path d="M969.904,649.54c0,0-9.417,28.667-34.75,34l-162.25-1.167c0,0,125.333-2,148-12    c22.667-10,37-20.333,37-20.333L969.904,649.54z" style="opacity:0.08;fill:#272525;" />
                 </g>
-                <path d="M969.904,649.54c0,0-9.417,28.667-34.75,34l-162.25-1.167c0,0,125.333-2,148-12    c22.667-10,37-20.333,37-20.333L969.904,649.54z" style="opacity:0.08;fill:#272525;" />
             </g>
-        </g>
-    </svg>
-
-    <MudPaper Class="d-flex flex-1">
-        @foreach (var poids in PoidsList.Where(p => p.Position == 4))
+        </svg>
+        <MudText Typo="Typo.body1" Color="Color.Error">@_ErrorMessage</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Large" StartIcon="@Icons.Material.Filled.Balance" Disabled="TestPesser()" OnClick="ExecPesee">Peser</MudButton>
+    </div>
+    <MudPaper Class="d-flex flex-1 flex-column">
+        <div class="d-flex justify-space-between">
+            <MudText Typo="Typo.h5" Class="text-center">Pesée effectuée: @_Pesee.NbPesee</MudText>
+            @if (_Success)
+            {
+                <MudButton StartIcon="@Icons.Material.Filled.Refresh" Variant="Variant.Filled" Color="Color.Info" OnClick="InitGame">Relancer une partie avec un poids en plus</MudButton>
+            }
+            else
+            {
+                <MudButton StartIcon="@Icons.Material.Filled.Check" Variant="Variant.Filled" Color="Color.Success" OnClick="CheckResponce" Disabled="DisabledCheckResponce()">Validé la réponse</MudButton>
+            }
+        </div>
+        @for (int i = 0; i < NombrePoids; i++)
         {
-            <Poids Index="@poids.Index" OnDrag="DragPoinds" />
+            int index = i;
+            <MudPaper Class="flex-1 d-flex align-center gap-5" @onclick="() => Drop(index + 4)">
+                <MudText Typo="Typo.h6" Class="flex-1 text-center">@(index + 1) @(index == 0 ? "Plus léger " : "")@(index == NombrePoids - 1 ? "Plus lourd " : ""):</MudText>
+                <div class="flex-1">
+                    @if (PoidsList.Any(p => p.Position == (index + 4)))
+                    {
+                        <Poids Index="@PoidsList.First(p => p.Position == (index + 4)).Index" OnDrag="DragPoinds" />
+                    }
+                </div>
+            </MudPaper>
         }
     </MudPaper>
+
+    @foreach (var poids in PoidsList.Where(p => p.Position > NombrePoids + 3))
+    {
+        <div style="position:absolute; top:@(_CurrentPoind?.Y + 1)px; left:@(_CurrentPoind?.X + 1)px;">
+            <Poids Index="@poids.Index" />
+        </div>
+    }
 </MudPaper>
 
 @code {
-    const int NOMBRE_POIDS = 5;
-    List<Poids> PoidsList { get; } = [];
+    record Point(double X, double Y);
+
+    int NombrePoids = 4;
+    List<Poids> PoidsList { get; set; } = [];
     int? _DraggedIndex { get; set; } = null;
+    Point? _CurrentPoind { get; set; } = null;
+    string? _ErrorMessage { get; set; } = null;
+    Pesee _Pesee { get; set; } = new Pesee();
+    bool _Success { get; set; } = false;
 
     protected override async Task OnInitializedAsync()
     {
-        for (int i = 0; i < NOMBRE_POIDS; i++)
-        {
-            PoidsList.Add(new Poids(i + 1) { Position = (int)Math.Sqrt((i + 1) * 2) });
-        }
+        InitGame();
 
         await base.OnInitializedAsync();
     }
 
+    void InitGame()
+    {
+        NombrePoids++;
+        _Success = false;
+        _Pesee = new Pesee();
+        PoidsList = [];
+        for (int i = 0; i < NombrePoids; i++)
+        {
+            PoidsList.Add(new Poids(i + 1));
+        }
+    }
+
+    void GetMousePos(MouseEventArgs args)
+    {
+        _CurrentPoind = new Point(args.ClientX, args.ClientY);
+        StateHasChanged();
+    }
+
     void DragPoinds(int poindIndex)
     {
+        var poind = PoidsList.FirstOrDefault(p => p.Index == poindIndex);
+        _Pesee.Resulta = null;
+
+        if (_DraggedIndex is not null)
+        {
+            var poindT = PoidsList.FirstOrDefault(p => p.Index == _DraggedIndex);
+            if (poindT is not null)
+            {
+                poindT.Position = poind?.Position ?? 1;
+            }
+        }
+
+        // Vérifier qu'il n'y est pas de poids perdu dans des position > NombrePoids + 3
+        foreach (var p in PoidsList.Where(p => p.Position > NombrePoids + 3))
+            p.Position -= NombrePoids + 3;
+
         _DraggedIndex = poindIndex;
+        if (poind is not null)
+        {
+            poind.Position += NombrePoids + 3;
+        }
     }
 
     void Drop(int position)
     {
         var poind = PoidsList.FirstOrDefault(p => p.Index == _DraggedIndex);
+
+        if (position == 2 || position == 3)
+        {
+            int countInPlace = PoidsList.Count(p => p.Position == position);
+
+            if (countInPlace >= 5)
+            {
+                DialogService.ShowMessageBox("Trop plein", "Il n'y a plus de place ici.", "OK");
+                return;
+            }
+        }
+        else if (position >= 4)
+        {
+            var poindInPlace = PoidsList.FirstOrDefault(p => p.Position == position);
+
+            if (poindInPlace is not null)
+            {
+                poindInPlace.Position = poind?.Position - (NombrePoids + 3) ?? 1;
+            }
+        }
+
         if (poind is not null)
         {
             poind.Position = position;
             _DraggedIndex = null;
         }
+    }
+
+    bool TestPesser()
+    {
+        if (!PoidsList.Any(p => p.Position == 2))
+        {
+            _ErrorMessage = "Il faut au moins un poids dans le plateau de gauche.";
+            return true;
+        }
+
+        if (!PoidsList.Any(p => p.Position == 3))
+        {
+            _ErrorMessage = "Il faut au moins un poids dans le plateau de droite.";
+            return true;
+        }
+
+        if (PoidsList.Count(p => p.Position == 2 || p.Position == 3) < 3)
+        {
+            _ErrorMessage = "Il faut au moins trois poids sur la balance.";
+            return true;
+        }
+
+        _ErrorMessage = null;
+        return false;
+    }
+
+    void ExecPesee()
+    {
+        var gauches = PoidsList.Where(p => p.Position == 2);
+        var droites = PoidsList.Where(p => p.Position == 3);
+        _Pesee.Execute(gauches, droites);
+        StateHasChanged();
+    }
+
+    void CheckResponce()
+    {
+        var poinds = PoidsList.OrderBy(p => p.Position);
+
+        for (int i = 1; i < NombrePoids; i++)
+        {
+            if (poinds.ElementAt(i - 1).Masse >= poinds.ElementAt(i).Masse)
+            {
+                DialogService.ShowMessageBox("Résultat", "La réponse est fausse.", "OK");
+                _Pesee.NbPesee += 2;
+                return;
+            }
+        }
+
+        _Success = true;
+        DialogService.ShowMessageBox("Résultat", "La réponse est juste, bravo !", "OK");
+    }
+
+    bool DisabledCheckResponce()
+    {
+        for (int i = 4; i < NombrePoids + 4; i++)
+        {
+            if (!PoidsList.Any(p => p.Position == i))
+                return true;
+        }
+
+        return false;
     }
 
     int GetXPos(int index, int total)
@@ -138,7 +293,7 @@
         else if (total == 3)
             return 14 + (index * 100);
         else if (total == 4)
-            return -36 + (index * 100);
+            return -8 + (index * 80);
         else // if (total == 5)
             return -16 + (index * 65);
     }
@@ -146,7 +301,75 @@
     class Poids(int index)
     {
         public int Index { get; } = index;
-        public double Masse { get; } = RNG.NextDouble(10, 100);
-        public int Position { get; set; } = 2;
+        public int Masse { get; } = RNG.Next(10, 100);
+        public int Position { get; set; } = 1;
+    }
+
+    class Pesee
+    {
+        public int NbPesee { get; set; } = 0;
+        public E_Cote? Resulta { get; set; } = null;
+
+        public void Execute(IEnumerable<Poids> gauches, IEnumerable<Poids> droites)
+        {
+            NbPesee++;
+            int masseGauche = gauches.Sum(p => p.Masse);
+            int masseDroite = droites.Sum(p => p.Masse);
+            if (masseGauche > masseDroite)
+                Resulta = E_Cote.Gauche;
+            else if (masseGauche < masseDroite)
+                Resulta = E_Cote.Droite;
+            else
+                Resulta = E_Cote.Egalite;
+        }
+
+        public string GetRotation()
+        {
+            switch (Resulta)
+            {
+                case E_Cote.Gauche:
+                    return "rotate(-25deg)";
+                case E_Cote.Droite:
+                    return "rotate(25deg)";
+                case E_Cote.Egalite:
+                default:
+                    return "rotate(0)";
+            }
+        }
+
+        public string GetTransltionGauche()
+        {
+            switch (Resulta)
+            {
+                case E_Cote.Gauche:
+                    return "translate(20,115)";
+                case E_Cote.Droite:
+                    return "translate(20,-115)";
+                case E_Cote.Egalite:
+                default:
+                    return "translate(0,0)";
+            }
+        }
+
+        public string GetTransltionDroite()
+        {
+            switch (Resulta)
+            {
+                case E_Cote.Gauche:
+                    return "translate(-20,-115)";
+                case E_Cote.Droite:
+                    return "translate(-20,115)";
+                case E_Cote.Egalite:
+                default:
+                    return "translate(0,0)";
+            }
+        }
+
+        public enum E_Cote
+        {
+            Gauche,
+            Droite,
+            Egalite
+        }
     }
 }

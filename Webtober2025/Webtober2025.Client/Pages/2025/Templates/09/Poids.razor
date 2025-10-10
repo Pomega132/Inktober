@@ -1,5 +1,7 @@
-﻿<svg class="cursor-grab" version="1.0" xmlns="http://www.w3.org/2000/svg" x="@X"
-     width="63px" height="113px" viewBox="0 0 63 113" draggable="true" @ondragstart="() => OnDrag.InvokeAsync(Index)">
+﻿@using Microsoft.AspNetCore.Components.Web
+
+<svg class="cursor-grab" version="1.0" xmlns="http://www.w3.org/2000/svg" x="@X"
+     width="63px" height="113px" viewBox="0 0 63 113" @onclick="() => OnDrag.InvokeAsync(Index)" @onclick:stopPropagation>
     <defs>
         <!-- x1,y1 -> début ; x2,y2 -> fin -->
         <linearGradient id="gLin" x1="0%" y1="100%" x2="100%" y2="000%">

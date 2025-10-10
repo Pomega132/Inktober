@@ -10,9 +10,9 @@
 	{
 		int thisDay = day; // Capture the current value of day
 		<a class="day d-flex @DisabledClass(thisDay)" href="/2025/@thisDay" disabled="@IsDisabled(thisDay)">
-			<MudPaper Class="d-flex flex-1 flex-column justify-center" Outlined="true" Elevation="4">
+            <MudPaper Class="@($"d-flex flex-1 flex-column justify-center {(Listes.THEMES_2025[thisDay - 1].Actif ? "" : "mud-error")}")" Outlined="true" Elevation="4">
 				<MudText Typo="Typo.h6" Align="Align.Center">Jour @thisDay</MudText>
-				<MudText Typo="Typo.body2" Align="Align.Center">@Listes.THEMES_2025[thisDay - 1]</MudText>
+				<MudText Typo="Typo.body2" Align="Align.Center">@Listes.THEMES_2025[thisDay - 1].Name</MudText>
 			</MudPaper>
 		</a>
 	}
@@ -21,7 +21,9 @@
 @code {
 	string DisabledClass(int day)
 	{
-		if (IsDisabled(day))
+
+
+		if (!Listes.THEMES_2025[day - 1].Actif || IsDisabled(day))
 		{
 			return "opacity-50 pointer-events-none";
 		}
