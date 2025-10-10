@@ -17,7 +17,7 @@ namespace Webtober2025.Client.Models
 			("LOURD", true),
 			("BALAYER", true),
 			("PIQÛRE", true),
-			("DÉCHIRÉ", true),
+			("DÉCHIRÉ", false),
 			("BOIRE", true),
 			("TRONC", true),
 			("EN LAMBEAUX", true),
