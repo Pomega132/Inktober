@@ -194,11 +194,11 @@
             _Breaking.Progress += _Inventaire.Pickaxe.Efficiency;
             if (_Breaking.Progress >= 10)
             {
-                E_Block block = _Map[_Breaking.Couche][_Breaking.Position.Y][_Breaking.Position.X];
+                E_Block block = _Map[_Breaking.Couche][(int)_Breaking.Position.Y][(int)_Breaking.Position.X];
                 _Inventaire.Add(block.Drop());
 
 
-                _Map.Break(_Breaking.Position.X, _Breaking.Position.Y, _Breaking.Couche);
+                _Map.Break((int)_Breaking.Position.X, (int)_Breaking.Position.Y, _Breaking.Couche);
                 _Breaking = new Breaking(_Breaking.Position, _Map.GetCouche(_Breaking.Position));
                 _Inventaire.PickaxeWornOut();
             }
@@ -219,14 +219,12 @@
     {
         _MouseState.IsDown = true;
         _Breaking = new Breaking(_MouseState.BlockPosition, _Map.GetCouche(_MouseState.BlockPosition));
-        Console.WriteLine($"Click Down {args.OffsetX} {args.OffsetY}");
     }
 
     void ClickUp(MouseEventArgs args)
     {
         _MouseState.IsDown = false;
         _Breaking = null;
-        Console.WriteLine($"Click Up {args.OffsetX} {args.OffsetY}");
     }
 
     void MouseMove(MouseEventArgs args)
@@ -253,7 +251,7 @@
         public int Width { get; } = width;
         public int Heigth { get; } = heigth;
 
-        public int GetCouche(Point point) => GetCouche(point.X, point.Y);
+        public int GetCouche(Point point) => GetCouche((int)point.X, (int)point.Y);
 
         public int GetCouche(int x, int y)
         {
@@ -352,19 +350,5 @@
         public int Couche { get; set; } = couche;
     }
 
-    class Point(int x, int y)
-    {
-        public int X { get; set; } = x;
-        public int Y { get; set; } = y;
-
-        public override bool Equals(object? obj)
-        {
-            if (obj is not Point p) return false;
-            return this == p;
-        }
-        public override int GetHashCode() => HashCode.Combine(X, Y);
-
-        public static bool operator ==(Point a, Point b) => a.X == b.X && a.Y == b.Y;
-        public static bool operator !=(Point a, Point b) => !(a == b);
-    }
+    
 }
