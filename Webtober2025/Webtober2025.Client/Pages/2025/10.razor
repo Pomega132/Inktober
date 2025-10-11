@@ -1,328 +1,329 @@
-﻿@page "/2025/10"
+@page "/2025/10"
 @using Webtober2025.Client.Models
 
 @implements IAsyncDisposable
 
 @inject IJSRuntime JS
+@inject IDialogService DialogService
 
 <div class="d-flex justify-space-between">
-    <h3>10 - Balayer</h3>
-    <div class="d-flex gap-5">
-        <MudText Typo="Typo.h6">Scrore : @_Score</MudText>
-        <MudText Typo="Typo.h6">PV : @_Player.PV</MudText>
-        <MudText Typo="Typo.h6">Difficulté : @_MaxCrow</MudText>
-    </div>
+	<h3>10 - Balayer</h3>
+	<div class="d-flex gap-5">
+		<MudText Typo="Typo.h6">Scrore : @_Score</MudText>
+		<MudText Typo="Typo.h6">PV : @_Player.PV</MudText>
+		<MudText Typo="Typo.h6">Difficulté : @_MaxCrow</MudText>
+	</div>
 </div>
 
 <MudPaper Class="flex-1 d-flex justify-space-around">
-    <div>
-        <canvas @ref="_Canvas" id="game" class="border" tabindex="0" width="1000" height="800" @onmousedown="ClickDown" @onmousemove="MouseMove" @onmouseup="ClickUp"></canvas>
-    </div>
+	<div>
+		<canvas @ref="_Canvas" id="game" class="border" tabindex="0" width="1000" height="800" @onmousedown="ClickDown" @onmousemove="MouseMove" @onmouseup="ClickUp"></canvas>
+	</div>
 </MudPaper>
 
 @code {
-    ElementReference _Canvas { get; set; }
-    IJSObjectReference? _Module { get; set; }
-    MouseState _MouseState { get; set; } = new MouseState();
-    Player _Player { get; set; } = new Player() { Position = new Point(450, 700) };
-    List<Crow> _Crows { get; set; } = new List<Crow>();
-    List<Tire> _Tires { get; set; } = new List<Tire>();
-    int _MaxCrow { get; set; } = 5;
-    DateTime LastDifficultyIncrease { get; set; } = DateTime.Now;
-    const int DifficultyIncreaseInterval = 5000; //ms
-    int _Score { get; set; } = 0;
-    DateTime LastCrowSpawn { get; set; } = DateTime.MinValue;
-    int _CrowSpawnRate => 1000 / (5 + (_MaxCrow / 2)); //ms
-    Task _GameLoopTask { get; set; } = Task.CompletedTask;
+	ElementReference _Canvas { get; set; }
+	IJSObjectReference? _Module { get; set; }
+	MouseState _MouseState { get; set; } = new MouseState();
+	Player _Player { get; set; } = new Player() { Position = new Point(450, 700) };
+	List<Crow> _Crows { get; set; } = new List<Crow>();
+	List<Tire> _Tires { get; set; } = new List<Tire>();
+	int _MaxCrow { get; set; } = 5;
+	DateTime LastDifficultyIncrease { get; set; } = DateTime.Now;
+	const int DifficultyIncreaseInterval = 5000; //ms
+	int _Score { get; set; } = 0;
+	DateTime LastCrowSpawn { get; set; } = DateTime.MinValue;
+	int _CrowSpawnRate => 1000 / (5 + (_MaxCrow / 2)); //ms
+	Task _GameLoopTask { get; set; } = Task.CompletedTask;
+	bool _GameStrated { get; set; } = true;
+	bool _GameOver { get; set; } = false;
 
-    protected override async Task OnInitializedAsync()
-    {
-        await base.OnInitializedAsync();
-    }
+	protected override async Task OnInitializedAsync()
+	{
+		await base.OnInitializedAsync();
+	}
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            _Module = await JS.InvokeAsync<IJSObjectReference>("import", "/Scripts/10/GameRender.js");
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			_Module ??= await JS.InvokeAsync<IJSObjectReference>("import", "/Scripts/10/GameRender.js");
 
-            await _Module.InvokeVoidAsync("InitGame");
+			await _Module.InvokeVoidAsync("InitGame");
 
-            _GameLoopTask = Task.Run(GameLoop);
-        }
+			_GameLoopTask = Task.Run(GameLoop);
+		}
 
-        await base.OnAfterRenderAsync(firstRender);
-    }
+		await base.OnAfterRenderAsync(firstRender);
+	}
 
-    async void GameLoop()
-    {
-        while (true)
-        {
-            try
-            {
-                DateTime start = DateTime.Now;
+	async void GameLoop()
+	{
+		while (true)
+		{
+			try
+			{
+				if (_GameStrated)
+				{
 
-                _Player.UpdatePosition(_MouseState.Position);
-                _Tires.ForEach(tire => tire.UpdatePos());
-                _Tires.RemoveAll(tire => tire.Position.X > 1000);
-                for (int i = _Crows.Count - 1; i > -1; i--)
-                {
-                    Crow crow = _Crows[i];
+					DateTime start = DateTime.Now;
 
-                    crow.UpdatePos();
+					_Player.UpdatePosition(_MouseState.Position);
+					_Tires.ForEach(tire => tire.UpdatePos());
+					_Tires.RemoveAll(tire => tire.Position.X > 1000);
+					for (int i = _Crows.Count - 1; i > -1; i--)
+					{
+						Crow crow = _Crows[i];
 
-                    if (crow.Position.X < -crow.Size.X || crow.Position.Y > 800)
-                        _Crows.Remove(crow);
-                    else
-                    {
-                        if (crow.Etat != Crow.E_Etat.DEAD)
-                        {
-                            Tire? tire = _Tires.FirstOrDefault(t => t.IsColliding(crow));
-                            if (tire is not null)
-                            {
-                                crow.PV--;
-                                if (crow.PV <= 0)
-                                {
-                                    _Score++;
-                                    crow.Etat = Crow.E_Etat.DEAD;
-                                    crow.Velocity = new Point(0, 5);
-                                }
-                                else
-                                {
-                                    crow.Etat = Crow.E_Etat.GET_DAMAGE;
-                                }
-                                crow.Frame = 0;
-                                crow.LastFrame = DateTime.Now;
-                                _Tires.Remove(tire);
-                            }
+						crow.UpdatePos();
 
-                            if (crow.IsColliding(_Player) && crow.Etat != Crow.E_Etat.ATTAQUE)
-                            {
-                                _Player.PV--;
-                                crow.Etat = Crow.E_Etat.ATTAQUE;
-                                crow.Frame = 0;
-                                crow.LastFrame = DateTime.Now;
-                                if (_Player.PV <= 0)
-                                {
-                                    //Game Over
-                                    _Crows.Clear();
-                                    _Tires.Clear();
-                                    _Player.PV = 10;
-                                    _Score = 0;
-                                    _MaxCrow = 5;
-                                    LastDifficultyIncrease = DateTime.Now;
-                                }
-                            }
-                        }
+						if (crow.Position.X < -crow.Size.X || crow.Position.Y > 800)
+							_Crows.Remove(crow);
+						else
+						{
+							if (crow.Etat != Crow.E_Etat.DEAD)
+							{
+								Tire? tire = _Tires.FirstOrDefault(t => t.IsColliding(crow));
+								if (tire is not null)
+								{
+									crow.PV--;
+									if (crow.PV <= 0)
+									{
+										_Score++;
+										crow.Etat = Crow.E_Etat.DEAD;
+										crow.Velocity = new Point(0, 5);
+									}
+									else
+									{
+										crow.Etat = Crow.E_Etat.GET_DAMAGE;
+									}
+									crow.Frame = 0;
+									crow.LastFrame = DateTime.Now;
+									_Tires.Remove(tire);
+								}
 
-                        crow.UpdateFrame();
-                    }
-                }
+								if (crow.IsColliding(_Player) && crow.Etat != Crow.E_Etat.ATTAQUE)
+								{
+									_Player.PV--;
+									crow.Etat = Crow.E_Etat.ATTAQUE;
+									crow.Frame = 0;
+									crow.LastFrame = DateTime.Now;
+									if (_Player.PV <= 0)
+									{
+										//Game Over
+										_GameStrated = false;
+										_GameOver = true;
+									}
+								}
+							}
 
-                if ((DateTime.Now - LastDifficultyIncrease).TotalMilliseconds > DifficultyIncreaseInterval)
-                {
-                    _MaxCrow++;
-                    LastDifficultyIncrease = DateTime.Now;
-                }
+							crow.UpdateFrame();
+						}
+					}
 
-                if (_Crows.Count < _MaxCrow && (DateTime.Now - LastCrowSpawn).TotalMilliseconds > _CrowSpawnRate)
-                {
-                    int y = RNG.Next(50, 650);
-                    Crow crow = new Crow()
-                        {
-                            Position = new Point(1000, y),
-                            Velocity = new Point(-5 - (_MaxCrow / 2), 0)
-                        };
-                    _Crows.Add(crow);
-                    LastCrowSpawn = DateTime.Now;
-                }
+					if ((DateTime.Now - LastDifficultyIncrease).TotalMilliseconds > DifficultyIncreaseInterval)
+					{
+						_MaxCrow++;
+						LastDifficultyIncrease = DateTime.Now;
+					}
 
-                if (_MouseState.IsDown)
-                {
-                    Tire? tire = _Player.Fire();
-                    if (tire is not null)
-                        _Tires.Add(tire);
-                }
+					if (_Crows.Count < _MaxCrow && (DateTime.Now - LastCrowSpawn).TotalMilliseconds > _CrowSpawnRate)
+					{
+						int y = RNG.Next(50, 650);
+						Crow crow = new Crow()
+						{
+							Position = new Point(1000, y),
+							Velocity = new Point(-5 - (_MaxCrow / 2), 0)
+						};
+						_Crows.Add(crow);
+						LastCrowSpawn = DateTime.Now;
+					}
+
+					if (_MouseState.IsDown)
+					{
+						Tire? tire = _Player.Fire();
+						if (tire is not null)
+							_Tires.Add(tire);
+					}
 
 
-                if (_Module is not null)
-                    await _Module.InvokeVoidAsync("RenderGame", _Player, _Tires, _Crows);
+					if (_Module is not null)
+						await _Module.InvokeVoidAsync("RenderGame", _Player, _Tires, _Crows);
 
-                DateTime end = DateTime.Now;
+					DateTime end = DateTime.Now;
 
-                int frameTime = (int)(end - start).TotalMilliseconds;
-                if (frameTime < 16)
-                    await Task.Delay(16 - frameTime);
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine(ex.GetMessages().ToShow());
-            }
-        }
-    }
+					int frameTime = (int)(end - start).TotalMilliseconds;
+					if (frameTime < 16)
+						await Task.Delay(16 - frameTime);
+				}
+				if (_GameOver)
+				{
+					_GameOver = false;
 
-    #region Mouse Events
-    void ClickDown(MouseEventArgs args)
-    {
-        _MouseState.IsDown = true;
-    }
+					var resurt = await DialogService.ShowMessageBox("Game Over", $"Votre score est de {_Score}", "Rejouer");
+					if (resurt == true)
+					{
+						_Crows.Clear();
+						_Tires.Clear();
+						_Player.PV = 10;
+						_Score = 0;
+						_MaxCrow = 5;
+						LastDifficultyIncrease = DateTime.Now;
+						_GameStrated = true;
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine(ex.GetMessages().ToShow());
+			}
+		}
+	}
 
-    void ClickUp(MouseEventArgs args)
-    {
-        _MouseState.IsDown = false;
-    }
+	#region Mouse Events
+	void ClickDown(MouseEventArgs args)
+	{
+		_MouseState.IsDown = true;
+	}
 
-    void MouseMove(MouseEventArgs args)
-    {
-        _MouseState.Position.X = (int)args.OffsetX;
-        _MouseState.Position.Y = (int)args.OffsetY;
-    }
+	void ClickUp(MouseEventArgs args)
+	{
+		_MouseState.IsDown = false;
+	}
 
-    #endregion
+	void MouseMove(MouseEventArgs args)
+	{
+		_MouseState.Position.X = (int)args.OffsetX;
+		_MouseState.Position.Y = (int)args.OffsetY;
+	}
 
-    public async ValueTask DisposeAsync()
-    {
-        try
-        {
-            _GameLoopTask.Dispose();
-        }
-        catch { }
+	#endregion
 
-        if (_Module is not null)
-        {
-            try
-            {
-                await _Module.DisposeAsync();
-            }
-            catch (JSDisconnectedException)
-            {
-            }
-        }
-    }
+	public async ValueTask DisposeAsync()
+	{
+		try
+		{
+			_GameLoopTask.Dispose();
+		}
+		catch { }
 
-    class MouseState
-    {
-        public bool IsDown { get; set; } = false;
-        public Point Position { get; set; } = new Point(0, 0);
-    }
+		if (_Module is not null)
+		{
+			try
+			{
+				await _Module.DisposeAsync();
+			}
+			catch (JSDisconnectedException)
+			{
+			}
+		}
+	}
 
-    class Rect
-    {
-        public Point Position { get; set; } = new Point(0, 0);
-        public Point Size { get; set; } = new Point(100, 100);
+	
 
-        public bool IsColliding(Rect other)
-        {
-            return !(Position.X > other.Position.X + other.Size.X ||
-                     Position.X + Size.X < other.Position.X ||
-                     Position.Y > other.Position.Y + other.Size.Y ||
-                     Position.Y + Size.Y < other.Position.Y);
-        }
-    }
+	class Player : Rect
+	{
+		public int PV { get; set; } = 10;
+		public int FireRate { get; set; } = 250; //ms
+		public DateTime LastFire { get; set; } = DateTime.MinValue;
 
-    class Player : Rect
-    {
-        public int PV { get; set; } = 10;
-        public int FireRate { get; set; } = 250; //ms
-        public DateTime LastFire { get; set; } = DateTime.MinValue;
+		public Tire? Fire()
+		{
+			if ((DateTime.Now - LastFire).TotalMilliseconds > FireRate)
+			{
+				LastFire = DateTime.Now;
+				return new Tire(Position.X + Size.X + 10, Position.Y + (Size.Y / 2) - (Tire.HEIGHT / 2));
+			}
 
-        public Tire? Fire()
-        {
-            if ((DateTime.Now - LastFire).TotalMilliseconds > FireRate)
-            {
-                LastFire = DateTime.Now;
-                return new Tire(Position.X + Size.X + 10, Position.Y + (Size.Y / 2) - (Tire.HEIGHT / 2));
-            }
+			return null;
+		}
 
-            return null;
-        }
+		public void UpdatePosition(Point mousePosition)
+		{
+			Position = new Point(mousePosition.X - Size.X / 2, mousePosition.Y - Size.Y / 2);
 
-        public void UpdatePosition(Point mousePosition)
-        {
-            Position = new Point(mousePosition.X - Size.X / 2, mousePosition.Y - Size.Y / 2);
+			if (Position.X < 0)
+				Position.X = 0;
+			if (Position.X + Size.X > 1000)
+				Position.X = 1000 - Size.X;
+			if (Position.Y < 0)
+				Position.Y = 0;
+			if (Position.Y + Size.Y > 800)
+				Position.Y = 800 - Size.Y;
+		}
+	}
 
-            if (Position.X < 0)
-                Position.X = 0;
-            if (Position.X + Size.X > 1000)
-                Position.X = 1000 - Size.X;
-            if (Position.Y < 0)
-                Position.Y = 0;
-            if (Position.Y + Size.Y > 800)
-                Position.Y = 800 - Size.Y;
-        }
-    }
+	class Tire : Rect
+	{
+		public const int HEIGHT = 20;
+		public const int WIDTH = 20;
 
-    class Tire : Rect
-    {
-        public const int HEIGHT = 20;
-        public const int WIDTH = 20;
+		public Point Velocity { get; set; } = new Point(10, 0);
 
-        public Point Velocity { get; set; } = new Point(10, 0);
+		public Tire(double x, double y)
+		{
+			Position = new Point(x, y);
+			Size = new Point(WIDTH, HEIGHT);
+		}
 
-        public Tire(double x, double y)
-        {
-            Position = new Point(x, y);
-            Size = new Point(WIDTH, HEIGHT);
-        }
+		public void UpdatePos()
+		{
+			Position = new Point(Position.X + Velocity.X, Position.Y + Velocity.Y);
+		}
+	}
 
-        public void UpdatePos()
-        {
-            Position = new Point(Position.X + Velocity.X, Position.Y + Velocity.Y);
-        }
-    }
+	class Crow : Rect
+	{
+		public Point Velocity { get; set; } = new Point(0, 0);
+		public int PV { get; set; } = 3;
 
-    class Crow : Rect
-    {
-        public Point Velocity { get; set; } = new Point(0, 0);
-        public int PV { get; set; } = 3;
+		public E_Etat Etat { get; set; } = E_Etat.FLY;
 
-        public E_Etat Etat { get; set; } = E_Etat.FLY;
+		public int Frame { get; set; } = 0;
+		public int NbFrames { get; set; } = 5;
+		public DateTime LastFrame { get; set; } = DateTime.Now;
+		public int FrameTimerMax { get; set; } = 100; //ms
 
-        public int Frame { get; set; } = 0;
-        public int NbFrames { get; set; } = 5;
-        public DateTime LastFrame { get; set; } = DateTime.Now;
-        public int FrameTimerMax { get; set; } = 100; //ms
+		public void UpdatePos()
+		{
+			Position = new Point(Position.X + Velocity.X, Position.Y + Velocity.Y);
+		}
 
-        public void UpdatePos()
-        {
-            Position = new Point(Position.X + Velocity.X, Position.Y + Velocity.Y);
-        }
+		public void UpdateFrame()
+		{
+			if ((DateTime.Now - LastFrame).TotalMilliseconds > FrameTimerMax)
+			{
+				Frame++;
+				if (Frame >= NbFrames)
+				{
+					switch (Etat)
+					{
+						case E_Etat.FLY:
+							Frame = 0;
+							break;
+						case E_Etat.ATTAQUE:
+							Etat = E_Etat.FLY;
+							Frame = 0;
+							break;
+						case E_Etat.GET_DAMAGE:
+							Etat = E_Etat.FLY;
+							Frame = 0;
+							break;
+						case E_Etat.DEAD:
+							Frame = NbFrames - 1;
+							break;
+					}
+				}
+				LastFrame = DateTime.Now;
+			}
+		}
 
-        public void UpdateFrame()
-        {
-            if ((DateTime.Now - LastFrame).TotalMilliseconds > FrameTimerMax)
-            {
-                Frame++;
-                if (Frame >= NbFrames)
-                {
-                    switch (Etat)
-                    {
-                        case E_Etat.FLY:
-                            Frame = 0;
-                            break;
-                        case E_Etat.ATTAQUE:
-                            Etat = E_Etat.FLY;
-                            Frame = 0;
-                            break;
-                        case E_Etat.GET_DAMAGE:
-                            Etat = E_Etat.FLY;
-                            Frame = 0;
-                            break;
-                        case E_Etat.DEAD:
-                            Frame = NbFrames - 1;
-                            break;
-                    }
-                }
-                LastFrame = DateTime.Now;
-            }
-        }
-
-        public enum E_Etat
-        {
-            FLY,
-            ATTAQUE,
-            GET_DAMAGE,
-            DEAD
-        }
-    }
+		public enum E_Etat
+		{
+			FLY,
+			ATTAQUE,
+			GET_DAMAGE,
+			DEAD
+		}
+	}
 }

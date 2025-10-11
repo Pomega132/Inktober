@@ -1,4 +1,4 @@
-﻿@page "/2025/6"
+@page "/2025/6"
 @using Webtober2025.Client.Models
 @using Webtober2025.Client.Models._06
 @using Block = Webtober2025.Client.Models._06.Block
@@ -164,6 +164,7 @@
     const int HEIGHT_TILES = 12;
 
     ElementReference _Canvas { get; set; }
+    IJSObjectReference? _Module { get; set; }
     System.Timers.Timer _Timer { get; } = new System.Timers.Timer(1000 / 60);
     Map _Map { get; } = new Map(WIDTH_TILES, HEIGHT_TILES);
     MouseState _MouseState { get; } = new MouseState();
@@ -178,7 +179,9 @@
             _Map.GenNextCouche();
             _Map.GenNextCouche();
 
-            await JS.InvokeAsync<object>("InitGame");
+            _Module = await JS.InvokeAsync<IJSObjectReference>("import", "/Scripts/06/GameRender.js");
+
+            await _Module.InvokeAsync<object>("InitGame");
             await _Canvas.FocusAsync();
             _Timer.Elapsed += (s, e) => InvokeAsync(GameLoop);
             _Timer.Start();
@@ -204,13 +207,21 @@
             }
         }
 
-        await JS.InvokeAsync<object>("RenderGame", _Map, _Breaking);
+        if(_Module is not null)
+            await _Module.InvokeAsync<object>("RenderGame", _Map, _Breaking);
     }
 
     public async ValueTask DisposeAsync()
     {
         _Timer.Stop();
         _Timer.Dispose();
+
+        if (_Module is not null)
+        {
+            //await _Module.InvokeVoidAsync("DisposeGame");
+            await _Module.DisposeAsync();
+		}
+
         await Task.CompletedTask;
     }
 
@@ -338,7 +349,7 @@
     {
         public bool IsDown { get; set; } = false;
         public Point Position { get; set; } = new Point(0, 0);
-        public Point BlockPosition => new Point(Position.X / TILE_SIZE, Position.Y / TILE_SIZE);
+        public Point BlockPosition => new Point( (int)(Position.X / TILE_SIZE), (int)(Position.Y / TILE_SIZE));
 
     }
 

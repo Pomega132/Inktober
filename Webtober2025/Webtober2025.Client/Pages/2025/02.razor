@@ -1,6 +1,8 @@
 @page "/2025/2"
 @using System.Text
 
+@implements IAsyncDisposable
+
 @inject IJSRuntime JS
 
 
@@ -62,68 +64,10 @@
     </MudPaper>
 </MudDrawerContainer>
 
-<script>
-    window.PrintWeb = async function(){
-        const el = document.getElementById("Web");
-        if (!el) throw new Error("SVG introuvable");
-
-        // Clone propre + assure xmlns + width/height depuis le viewBox
-        const clone = el.cloneNode(true);
-        clone.removeAttribute("style");
-        if (!clone.getAttribute("xmlns")) clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-
-        if(clone.lastChild.nodeName == "circle")
-        clone.removeChild(clone.lastChild);
-
-        const w = el.getBBox().width;
-        const h = el.getBBox().height;
-
-        clone.setAttribute("width", w);
-        clone.setAttribute("height", h);
-
-        // Sérialisation
-        const xml = new XMLSerializer().serializeToString(clone);
-        const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
-        const url = URL.createObjectURL(svgBlob);
-
-        // Image -> Canvas
-        const img = new Image();
-        // Si votre SVG référence des images externes, décommentez et servez-les avec CORS:
-        // img.crossOrigin = "anonymous";
-        const loadPromise = new Promise((res, rej) => {
-        img.onload = () => res();
-        img.onerror = (e) => rej(e);
-        });
-        img.src = url;
-        await loadPromise;
-
-        const canvas = document.createElement("canvas");
-        canvas.width  = Math.round(w);
-        canvas.height = Math.round(h);
-
-        const ctx = canvas.getContext("2d");
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = "high";
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-        URL.revokeObjectURL(url);
-
-        // Téléchargement
-        const blob = await new Promise(r => canvas.toBlob(r, "image/png"));
-        const aUrl = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = aUrl;
-        a.download = "Toile.png";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(aUrl);
-    }
-</script>
-
 @code {
     const double GRAVITY = 15;
 
+    IJSObjectReference? _Module { get; set; }
     ListPoints? _CurrentFil = null;
     Point? _Pointer = null;
     List<ListPoints> _Toile = [
@@ -192,6 +136,16 @@
     ];
     List<ListPoints> _Fils = [];
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if( firstRender)
+        {
+            _Module ??= await JS.InvokeAsync<IJSObjectReference>("import", "/Scripts/2025/02/Logic.js");
+		}
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
     string GetFilName(int index) => $"Fil {index + 1}";
 
     string GetPointerCurve()
@@ -209,7 +163,7 @@
         return $" {c1x} {c1y} {c2x} {c2y} {_Pointer}";
     }
 
-    void Print() => JS.InvokeVoidAsync("PrintWeb");
+    void Print() => _Module?.InvokeVoidAsync("PrintWeb");
 
     void Click(MouseEventArgs args)
     {
@@ -245,6 +199,11 @@
     void Move(MouseEventArgs args)
     {
         _Pointer = new Point(args.OffsetX, args.OffsetY);
+    }
+
+    public ValueTask DisposeAsync()
+    {
+		return _Module is null ? ValueTask.CompletedTask : _Module.DisposeAsync();
     }
 
     class ListPoints(Point origine, double elasticity = GRAVITY) : List<Point>
