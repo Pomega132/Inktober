@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using System.Text;
+
+using Microsoft.AspNetCore.SignalR;
 
 using Newtonsoft.Json;
 
-using static Webtober2025.Client.Models._01.GameHub;
+using Tools.Core;
 
 namespace Webtober2025.Client.Models._01
 {
@@ -20,105 +22,117 @@ namespace Webtober2025.Client.Models._01
         const int LIGNES = 3;
         const int COLONNES = 5;
 
-        private Player? _Player { get; set; }
-
-        public static List<Game> Games { get; set; } = [];
+        public static Games AllGames { get; set; } = [];
 
         public async Task SendMessage(string message)
         {
-            if (_Player is null)
+            Player? player = AllGames.GetPlayerByConnectionId(Context.ConnectionId);
+
+            if (player is null)
                 return;
 
-            Game? game = Games.FirstOrDefault(g => g.Players.Contains(_Player));
+            Game? game = AllGames.FirstOrDefault(g => g.Players.Contains(player));
 
             if (game is null)
                 return;
 
-            await Clients.Group(game.GameKey).SendAsync(ACTION_RECEIVE_MESSAGE, _Player.Name, message);
+            await Clients.Group(game.GameKey).SendAsync(ACTION_RECEIVE_MESSAGE, player.Name, message);
         }
 
         public async Task Connect(string playerKey)
         {
-            Game? game = Games.FirstOrDefault(g => g.Players.Any(p => p.Id == playerKey));
+            Game? game = AllGames.FirstOrDefault(g => g.Players.Any(p => p.Id == playerKey));
             if (game is null)
             {
                 await Clients.Caller.SendAsync(ACTION_CONNECT_RESPOSE, false, "Partie introuvable", null);
                 return;
             }
-            _Player = game.Players.First(p => p.Id == playerKey);
-            await Groups.AddToGroupAsync(Context.ConnectionId, game.GameKey);
-            string jsonGame = JsonConvert.SerializeObject(game);
+            Player player = game.Players.First(p => p.Id == playerKey);
+            if (player is not null)
+            {
+                player.ConnectionId = Context.ConnectionId;
 
-            await Clients.Caller.SendAsync(ACTION_CONNECT_RESPOSE, true, _Player.Name, jsonGame);
+                await Groups.AddToGroupAsync(Context.ConnectionId, game.GameKey);
+                string jsonGame = JsonConvert.SerializeObject(game);
+
+                await Clients.Caller.SendAsync(ACTION_CONNECT_RESPOSE, true, player.Name, jsonGame);
+            }
         }
 
         public async Task CreateServer(string playerName, string? password, int maxPlayers = 2)
         {
-            _Player = new Player(playerName, Clients.Caller)
+            Player player = new Player(playerName, Context.ConnectionId, Clients.Caller)
             {
                 IsMaster = true
             };
 
-            Game game = new Game(password, _Player, maxPlayers);
-            Games.Add(game);
+            Game game = new Game(password, player, maxPlayers);
+            AllGames.Add(game);
 
             await Groups.AddToGroupAsync(Context.ConnectionId, game.GameKey);
 
-            await Clients.Caller.SendAsync(ACTION_SERVER_JOIN, _Player.Id);
-            await Connect(_Player.Id);
+            await Clients.Caller.SendAsync(ACTION_SERVER_JOIN, true, player.Id);
+            await Connect(player.Id);
         }
 
         public async Task JoinGame(string playerName, string? gameKey, string? password)
         {
-            _Player = new Player(playerName, Clients.Caller);
-            Game? game = Games.FirstOrDefault(g => g.GameKey == gameKey);
+            Player player = new Player(playerName, Context.ConnectionId, Clients.Caller);
+            Game? game = AllGames.FirstOrDefault(g => g.GameKey == gameKey?.Trim());
             if (game == null)
             {
-                await Clients.Caller.SendAsync(ACTION_PLAYER_JOINED, false, "Parite introuvable");
+                await Clients.Caller.SendAsync(ACTION_SERVER_JOIN, false, "Parite introuvable");
                 return;
             }
             if (game.IsStarted)
             {
-                await Clients.Caller.SendAsync(ACTION_PLAYER_JOINED, false, "Partie déjà commencée");
+                await Clients.Caller.SendAsync(ACTION_SERVER_JOIN, false, "Partie déjà commencée");
                 return;
             }
             if (game.Password != null && game.Password != password)
             {
-                await Clients.Caller.SendAsync(ACTION_PLAYER_JOINED, false, "Mauvais mot de passe");
+                await Clients.Caller.SendAsync(ACTION_SERVER_JOIN, false, "Mauvais mot de passe");
                 return;
             }
             if (game.Players.Count >= game.MaxPlayers)
             {
-                await Clients.Caller.SendAsync(ACTION_PLAYER_JOINED, false, "Partie pleine");
+                await Clients.Caller.SendAsync(ACTION_SERVER_JOIN, false, "Partie pleine");
                 return;
             }
-            game.Players.Add(_Player);
-            await Clients.Group(game.GameKey).SendAsync(ACTION_PLAYER_JOINED, true, $"{_Player.Name} joined the game");
+            game.Players.Add(player);
+            await Clients.Caller.SendAsync(ACTION_SERVER_JOIN, true, player.Id);
+            await Clients.Group(game.GameKey).SendAsync(ACTION_RECEIVE_MESSAGE, "Système", $"{player.Name} joined the game");
+            await Clients.Group(game.GameKey).SendAsync(UPDATE_PLAYER_LIST, JsonConvert.SerializeObject(game.Players));
             await Groups.AddToGroupAsync(Context.ConnectionId, game.GameKey);
+            await Connect(player.Id);
         }
 
         public async Task SetPersonnage(string jsonPersonnage)
         {
-            if (_Player is null)
+            Player? player = AllGames.GetPlayerByConnectionId(Context.ConnectionId);
+
+            if (player is null)
             {
                 return;
             }
-            _Player.Personnage = JsonConvert.DeserializeObject<Personnage>(jsonPersonnage);
-            if (_Player.Personnage is null)
+            player.Personnage = JsonConvert.DeserializeObject<Personnage>(jsonPersonnage);
+            if (player.Personnage is null)
                 return;
-            _Player.Personnage.Id = RNG.KeyGen(); // Ensure unique ID
+            player.Personnage.Id = RNG.KeyGen(); // Ensure unique ID
 
-            await Clients.Group(Games.First(g => g.Players.Contains(_Player)).GameKey)
-                .SendAsync(UPDATE_PLAYER_LIST, JsonConvert.SerializeObject(Games.First(g => g.Players.Contains(_Player)).Players));
+            await Clients.Group(AllGames.First(g => g.Players.Contains(player)).GameKey)
+                .SendAsync(UPDATE_PLAYER_LIST, JsonConvert.SerializeObject(AllGames.First(g => g.Players.Contains(player)).Players));
         }
 
         public async Task StartGame()
         {
-            if (_Player is null)
+            Player? player = AllGames.GetPlayerByConnectionId(Context.ConnectionId);
+
+            if (player is null)
             {
                 return;
             }
-            Game? game = Games.FirstOrDefault(g => g.Players.Contains(_Player) && g.Creator == _Player);
+            Game? game = AllGames.FirstOrDefault(g => g.Players.Contains(player) && g.Creator == player);
             if (game is null)
             {
                 return;
@@ -138,63 +152,81 @@ namespace Webtober2025.Client.Models._01
             await Clients.Group(game.GameKey).SendAsync(UPDATE_PERSONNAGES_LIST, jsonPersonnes);
             await Clients.Group(game.GameKey).SendAsync(ACTION_GAME_STARTED);
 
-            game.PlayerIdTour = game.Players[RNG.Next(game.Players.Count)].Id;
+            Player joueurQuiCommence = game.Players[RNG.Next(game.Players.Count)];
+            game.PlayerIdTour = joueurQuiCommence.Id;
+            await Clients.Group(game.GameKey).SendAsync(ACTION_RECEIVE_MESSAGE, "Système", $"Début de la partie ! C'est {joueurQuiCommence.Name} qui commence.");
             await Clients.Group(game.GameKey).SendAsync(ACTION_PLAYER_TOUR, game.PlayerIdTour);
         }
 
         public async Task Play(string personnageId)
         {
-            if (_Player is null)
+            Player? player = AllGames.GetPlayerByConnectionId(Context.ConnectionId);
+
+            if (player is null)
             {
                 return;
             }
-            Game? game = Games.FirstOrDefault(g => g.Players.Contains(_Player) && g.PlayerIdTour == _Player.Id);
+            Game? game = AllGames.FirstOrDefault(g => g.Players.Contains(player));
             if (game is null)
             {
                 return;
             }
 
-            if (game.PlayerIdTour != _Player.Id)
+            if (game.PlayerIdTour != player.Id)
             {
                 await Clients.Caller.SendAsync(ACTION_RECEIVE_MESSAGE, "Système", "Ce n'est pas à vous de jouer");
                 return;
             }
 
-            Player? persoJoueur = (from player in game.Players
-                                   where !player.Personnage?.IsDead ?? false
-                                   where player.Personnage?.Id == personnageId
-                                   select player).FirstOrDefault();
+            Personnage? personnage = game.Grille.SelectMany(l => l).FirstOrDefault(p => p.Id == personnageId);
+
+            if (personnage is null || personnage.State != Personnage.E_State.ALIVE)
+            {
+                await Clients.Caller.SendAsync(ACTION_RECEIVE_MESSAGE, "Système", "Ce perssonage à déjà été éliminé");
+                return;
+            }
+
+            Player? persoJoueur = (from p in game.Players
+                                   where p.Personnage?.State == Personnage.E_State.ALIVE
+                                   where p.Personnage?.Id == personnageId
+                                   select p).FirstOrDefault();
 
             if (persoJoueur is not null)
             {
-                persoJoueur.Personnage!.IsDead = true;
-                if (persoJoueur.Id == _Player.Id)
+                persoJoueur.Personnage!.State = Personnage.E_State.PLAYER_DEAD;
+                if (persoJoueur.Id == player.Id)
                 {
-                    await Clients.Group(game.GameKey).SendAsync(ACTION_RECEIVE_MESSAGE, "Système", $"{_Player.Name} s'est éliminé lui-même !");
-                    _Player.Score--;
+                    await Clients.Group(game.GameKey).SendAsync(ACTION_RECEIVE_MESSAGE, "Système", $"{player.Name} s'est éliminé lui-même !");
+                    player.Score--;
                 }
                 else
                 {
-                    await Clients.Group(game.GameKey).SendAsync(ACTION_RECEIVE_MESSAGE, "Système", $"{_Player.Name} à trouvé le personnage de {persoJoueur.Name} !");
-                    _Player.Score++;
+                    await Clients.Group(game.GameKey).SendAsync(ACTION_RECEIVE_MESSAGE, "Système", $"{player.Name} à trouvé le personnage de {persoJoueur.Name} !");
+                    player.Score++;
                 }
                 await Clients.Group(game.GameKey).SendAsync(UPDATE_PLAYER_LIST, JsonConvert.SerializeObject(game.Players));
                 await Clients.Group(game.GameKey).SendAsync(UPDATE_PERSONNAGES_LIST, JsonConvert.SerializeObject(game.Grille));
-                if (await CheckWin(game, _Player.Id))
+                if (await CheckWin(game, player.Id))
                     return;
             }
 
-            Personnage? personnage = game.Grille.SelectMany(l => l).FirstOrDefault(p => p.Id == personnageId);
-            if (personnage is null || personnage.IsDead)
-                return;
-
-            personnage.IsDead = true;
-
-            await Clients.Caller.SendAsync(ACTION_RECEIVE_MESSAGE, "Système", $"{_Player.Name} n'a pas trouvé le bon personnage.");
-            await Clients.Group(game.GameKey).SendAsync(UPDATE_PERSONNAGES_LIST, JsonConvert.SerializeObject(game.Grille));
+            personnage = game.Grille.SelectMany(l => l).FirstOrDefault(p => p.Id == personnageId);
             string nextPlayerTour = game.NextPlayerIdTour();
+            if (personnage is null || personnage.State != Personnage.E_State.ALIVE)
+            {
+                if (await CheckWin(game, nextPlayerTour))
+                    return;
+                await Clients.Group(game.GameKey).SendAsync(ACTION_PLAYER_TOUR, nextPlayerTour);
 
-            if(await CheckWin(game, nextPlayerTour))
+                return;
+            }
+
+            personnage.State = Personnage.E_State.BOT_DEAD;
+
+            await Clients.Caller.SendAsync(ACTION_RECEIVE_MESSAGE, "Système", $"{player.Name} n'a pas trouvé le bon personnage.");
+            await Clients.Group(game.GameKey).SendAsync(UPDATE_PERSONNAGES_LIST, JsonConvert.SerializeObject(game.Grille));
+
+            if (await CheckWin(game, nextPlayerTour))
                 return;
 
             await Clients.Group(game.GameKey).SendAsync(ACTION_PLAYER_TOUR, nextPlayerTour);
@@ -202,18 +234,47 @@ namespace Webtober2025.Client.Models._01
 
         private async Task<bool> CheckWin(Game game, string playerId)
         {
-            if (game.Players.Count(p => p.Id != playerId && (!p.Personnage?.IsDead ?? false)) == 0)
+            if (!game.Players.Any(p => p.Id != playerId && (p.Personnage?.State == Personnage.E_State.ALIVE)))
             {
                 // Game over
-                Player? winner = game.Players.OrderByDescending(p => p.Score).FirstOrDefault();
-                if (winner is not null)
-                    await Clients.Group(game.GameKey).SendAsync(ACTION_RECEIVE_MESSAGE, "Système", $"{winner.Name} a gagné la partie avec {winner.Score} points !");
-                else
-                    await Clients.Group(game.GameKey).SendAsync(ACTION_RECEIVE_MESSAGE, "Système", $"Personne n'a gagné la partie !");
+                int higthestScore = game.Players.Max(p => p.Score);
 
-                await Clients.Group(game.GameKey).SendAsync(ACTION_GAME_OVER);
+                IEnumerable<Player> winner = game.Players.Where(p => p.Score == higthestScore);
+
+                StringBuilder message = new StringBuilder();
+                if (winner.Count() == 1) // S'il n'y a qu'un·e gagnant·e
+                    message.Append($"{winner.First().Name} a");
+                else // S'il y a plusieurs gagnant·e·s
+                    message.Append($"{string.Join(", ", winner.Take(winner.Count() - 1).Select(j => j.Name))} et {winner.Last().Name} ont");
+
+                // Score du/des gagnant·e·s
+                message.Append($" gagné la partie avec {higthestScore} point{(Math.Abs(higthestScore) > 1 ? "s" : "")}");
+                if (winner.Count() > 1)
+                    message.Append(" chacun");
+
+                message.Append(" !");
+
+                // Annoncer le(s) gagnant·e·s
+                await Clients.Group(game.GameKey).SendAsync(ACTION_RECEIVE_MESSAGE, "Système", message.ToString());
+
+                IEnumerable<ScoreEntry> scores = from p in game.Players
+                                                 orderby p.Score descending
+                                                 select new ScoreEntry(p.Name, p.Score, p.Score == higthestScore);
+
+                string jsonScores = JsonConvert.SerializeObject(scores);
+
+                await Clients.Group(game.GameKey).SendAsync(ACTION_GAME_OVER, jsonScores);
                 game.PlayerIdTour = null;
                 game.IsStarted = false;
+                game.Players.ForEach(p =>
+                {
+                    p.IsReady = false;
+                    p.Personnage = null;
+                    p.Score = 0;
+                });
+                game.Grille.Clear();
+
+                await Clients.Group(game.GameKey).SendAsync(UPDATE_PLAYER_LIST, JsonConvert.SerializeObject(game.Players));
 
                 return true;
             }
@@ -232,7 +293,6 @@ namespace Webtober2025.Client.Models._01
             public bool IsStarted { get; set; } = false;
             [JsonIgnore]
             public List<Personnage> Personnages { get; set; } = GenPersonage(maxPlayers);
-            [JsonIgnore]
             public List<List<Personnage>> Grille { get; set; } = [[], []];
 
             public void GenGrille()
@@ -267,7 +327,7 @@ namespace Webtober2025.Client.Models._01
             private List<Personnage> GetAllPersonnages()
             {
                 List<Personnage> personnages = [];
-                foreach (var player in Players)
+                foreach (Player player in Players)
                 {
                     if (player.Personnage is not null)
                     {
@@ -292,18 +352,52 @@ namespace Webtober2025.Client.Models._01
 
         }
 
-        public class Player(string name, IClientProxy client)
+        public class Games : List<Game>
         {
+            public Player? GetPlayerById(string playerId)
+            {
+                foreach (Game game in this)
+                {
+                    Player? player = game.Players.FirstOrDefault(p => p.Id == playerId);
+                    if (player is not null)
+                        return player;
+                }
+                return null;
+            }
+
+            public Player? GetPlayerByConnectionId(string connectionId)
+            {
+                foreach (Game game in this)
+                {
+                    Player? player = game.Players.FirstOrDefault(p => p.ConnectionId == connectionId);
+                    if (player is not null)
+                        return player;
+                }
+                return null;
+            }
+        }
+
+        public class Player(string name, string connectionId, IClientProxy client)
+        {
+            private bool _IsReady = false;
+
             public string Id { get; set; } = RNG.KeyGen();
+            public string ConnectionId { get; set; } = connectionId;
             public int Score { get; set; } = 0;
             public string Name { get; set; } = name;
             [JsonIgnore]
             public IClientProxy Client { get; set; } = client;
             public bool IsMaster { get; set; } = false;
-            public bool IsReady { get => Personnage is not null; }
+            public bool IsReady { get => _IsReady || Personnage is not null; set => _IsReady = value; }
             [JsonIgnore]
             public Personnage? Personnage { get; set; }
         }
 
+        public class ScoreEntry(string playerName, int score, bool winner)
+        {
+            public string PlayerName { get; set; } = playerName;
+            public int Score { get; set; } = score;
+            public bool Winner { get; set; } = winner;
+        }
     }
 }

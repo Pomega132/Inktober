@@ -7,9 +7,9 @@
 </div>
 <MudPaper Class="pa-5">
     <MudSlider @bind-Value="_Personnage.Moustache" Min="0" Max="29" Color="Color.Primary">Moustache</MudSlider>
-    <MudSlider @bind-Value="_Personnage.Hue" Min="0" Max="180" Color="Color.Primary">Couleur</MudSlider>
-    <MudSlider @bind-Value="_Personnage.Saturation" Min="0" Max="1" Step="0.02" Color="Color.Primary">Saturation</MudSlider>
-    <MudSlider @bind-Value="_Personnage.Lightness" Min="0" Max="1" Step="0.02" Color="Color.Primary">Luminosité</MudSlider>
+    <MudSlider @bind-Value="_Personnage.Hue" Min="0" Max="359" Color="Color.Primary">Couleur : @(_Personnage.Hue)°</MudSlider>
+    <MudSlider @bind-Value="_Personnage.Saturation" Min="0" Max="1" Step="0.02" Color="Color.Primary">Saturation : @Math.Round(_Personnage.Saturation * 100)%</MudSlider>
+    <MudSlider @bind-Value="_Personnage.Lightness" Min="0" Max="1" Step="0.02" Color="Color.Primary">Luminosité : @Math.Round(_Personnage.Lightness * 100)%</MudSlider>
     <div class="d-flex justify-center">
         <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Valider">Valider</MudButton>
     </div>

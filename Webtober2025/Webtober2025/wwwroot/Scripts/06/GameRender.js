@@ -1,7 +1,7 @@
 ﻿/** @type {GameStateInfo} */
-var GameState = GameState || {};
+export var GameState = GameState || {};
 
-window.InitGame = function ()
+export function InitGame()
 {
     GameState = new GameStateInfo();
 }
@@ -11,7 +11,7 @@ window.InitGame = function ()
  * @param {Array<Array<Array<number>>>} map
  * @param {Breaking} breaking
  */
-window.RenderGame = function (map, breaking)
+export function RenderGame(map, breaking)
 {
     function hash2(x, y)
     {
@@ -168,7 +168,7 @@ window.RenderGame = function (map, breaking)
     }
 }
 
-class Textures
+export class Textures
 {
     Texture = {};
     TextureIds = [
@@ -188,7 +188,7 @@ class Textures
     }
 }
 
-class GameStateInfo
+export class GameStateInfo
 {
 
     constructor()
@@ -200,7 +200,7 @@ class GameStateInfo
     }
 }
 
-class Breaking
+export class Breaking
 {
     constructor()
     {
@@ -211,7 +211,7 @@ class Breaking
     }
 }
 
-class Point
+export class Point
 {
     constructor(x = 0, y = 0)
     {

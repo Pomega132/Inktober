@@ -1,0 +1,39 @@
+﻿@using Webtober2025.Client.Models._01
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h4">Fin de partie</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Typo="Typo.h5" Align="Align.Center"><MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Color="Color.Warning" /> Scores <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Color="Color.Warning" /></MudText>
+        <div class="d-grid gap-3" style="grid-template-columns: auto auto auto auto; width:fit-content;">
+            @foreach (GameHub.ScoreEntry score in Scores.OrderByDescending(s => s.Score))
+            {
+                if (score.Winner)
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Color="Color.Warning" />
+                }
+                else
+                {
+                    <div></div>
+                }
+                <MudText>@score.PlayerName</MudText>
+                <MudText>:</MudText>
+                <MudText>@score.Score</MudText>
+            }
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudSpacer />
+        <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="() => MudDialog.Close()">Refaire une partie</MudButton>
+        <MudSpacer />
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public List<GameHub.ScoreEntry> Scores { get; set; } = [];
+}

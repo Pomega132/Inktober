@@ -52,7 +52,7 @@
         STONE,
         [Pickaxe("Iron", 0.14, 350)]
         IRON,
-        [Pickaxe("Gold", 0.16, 100)]
+        [Pickaxe("Golden", 0.16, 100)]
         GOLD,
         [Pickaxe("Diamond", 0.4, 500)]
         DIAMOND,

@@ -51,6 +51,9 @@
 
     private void Join()
     {
-        MudDialog.Close(DialogResult.Ok(new { GameKey = _GameKey, Password = _Password, IsCreate = false }));
+        if (HubConnection is not null)
+        {
+            HubConnection.SendAsync(nameof(GameHub.JoinGame), _PlayerName, _GameKey, _Password);
+        }
     }
 }

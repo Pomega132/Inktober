@@ -7,371 +7,431 @@
 <h3>05 - Cerf</h3>
 
 <MudPaper Class="flex-1 d-flex justify-space-between">
-	<div>
-		<canvas @ref="_Canvas" id="game" class="border" tabindex="0" width="1000" height="800" @onkeydown="AddKeyPress" @onkeyup="RemoveKeyPress"></canvas>
-	</div>
+    <div>
+        <canvas @ref="_Canvas" id="game" class="border" tabindex="0" width="1024" height="800" @onkeydown="AddKeyPress" @onkeyup="RemoveKeyPress"></canvas>
+    </div>
 
-	<div class="d-flex flex-column gap-1">
-		@foreach (List<E_Tile> line in _Map)
-		{
+    <div class="d-flex flex-column gap-1">
+        @foreach (List<E_Tile> line in _Map)
+        {
 
-			<div class="d-flex gap-1">
-				@for (int i = 0; i < line.Count; i++)
-				{
-					int index = i;
-					E_Tile tile = line[index];
-					@if (tile == E_Tile.AIR)
-					{
-						<div style="width:16px; height:16px; display:inline-block; background-color:lightblue;" @onclick="@(() => line[index] = E_Tile.PLATFORM)"></div>
-					}
-					else if (tile == E_Tile.GROUND)
-					{
-						<div style="width:16px; height:16px; display:inline-block; background-color:brown;"></div>
-					}
-					else if (tile == E_Tile.PLATFORM)
-					{
-						<div style="width:16px; height:16px; display:inline-block; background-color:gray;" @onclick="@(() => line[index] = E_Tile.AIR)"></div>
-					}
-					else if (tile == E_Tile.CHEST)
-					{
-						<div style="width:16px; height:16px; display:inline-block; background-color:yellow;"></div>
-					}
-				}
-			</div>
-		}
-	</div>
+            <div class="d-flex gap-1">
+                @for (int i = 0; i < line.Count; i++)
+                {
+                    int index = i;
+                    E_Tile tile = line[index];
+                    @if (tile == E_Tile.AIR)
+                    {
+                        <div style="width:16px; height:16px; display:inline-block; background-color:lightblue;" @onclick="@(() => {line[index] = E_Tile.PLATFORM; _Canvas.FocusAsync();})"></div>
+                    }
+                    else if (tile == E_Tile.GROUND)
+                    {
+                        <div style="width:16px; height:16px; display:inline-block; background-color:brown;"></div>
+                    }
+                    else if (tile == E_Tile.PLATFORM)
+                    {
+                        <div style="width:16px; height:16px; display:inline-block; background-color:gray;" @onclick="@(() => {line[index] = E_Tile.AIR; _Canvas.FocusAsync();})"></div>
+                    }
+                    else if (tile == E_Tile.CHEST)
+                    {
+                        <div style="width:16px; height:16px; display:inline-block; background-color:yellow;"></div>
+                    }
+                }
+            </div>
+        }
+    </div>
 </MudPaper>
 
-
-
-<script src="/Scripts/05/GameRender.js" type="module"></script>
-
 @code {
-	ElementReference _Canvas { get; set; }
-	System.Timers.Timer _Timer { get; } = new System.Timers.Timer(1000 / 60);
-	List<E_Controle> _KeysPressed { get; } = new List<E_Controle>();
-	Cerf _Cerf { get; set; } = new Cerf() { X = 100, Y = 100 };
-	Controles _Controles { get; set; } = new Controles
-	{
-		new Controle() { C = E_Controle.LEFT, KeysBinding = new List<string> { "ArrowLeft", "KeyA" } },
-		new Controle() { C = E_Controle.RIGHT, KeysBinding = new List<string> { "ArrowRight", "KeyD" } },
-		new Controle() { C = E_Controle.UP, KeysBinding = new List<string> { "ArrowUp", "KeyW" } },
-		new Controle() { C = E_Controle.DOWN, KeysBinding = new List<string> { "ArrowDown", "KeyS" } },
-		new Controle() { C = E_Controle.JUMP, KeysBinding = new List<string> { "Space" } },
-		new Controle() { C = E_Controle.PAUSE, KeysBinding = new List<string> { "Escape", "KeyP", "Pause" } },
-		new Controle() { C = E_Controle.BROUTE, KeysBinding = new List<string> { "KeyB" } },
-	};
-	Map _Map { get; set; } = new Map();
+    const double FRAME_DURATION = 16;
 
-	protected override async Task OnInitializedAsync()
-	{
-		int hChest = RNG.Next(_Map.Height / 4);
-		int wChest = RNG.Next(_Map.Width);
-		_Map[hChest][wChest] = E_Tile.CHEST;
+    ElementReference _Canvas { get; set; }
+    IJSObjectReference? _Module { get; set; }
+    List<E_Controle> _KeysPressed { get; } = new List<E_Controle>();
+    Cerf _Cerf { get; set; } = new Cerf() { X = 100, Y = 100 };
+    Controles _Controles { get; set; } = new Controles
+    {
+        new Controle() { C = E_Controle.LEFT, KeysBinding = new List<string> { "ArrowLeft", "KeyA" } },
+        new Controle() { C = E_Controle.RIGHT, KeysBinding = new List<string> { "ArrowRight", "KeyD" } },
+        new Controle() { C = E_Controle.UP, KeysBinding = new List<string> { "ArrowUp", "KeyW" } },
+        new Controle() { C = E_Controle.DOWN, KeysBinding = new List<string> { "ArrowDown", "KeyS" } },
+        new Controle() { C = E_Controle.JUMP, KeysBinding = new List<string> { "Space" } },
+        new Controle() { C = E_Controle.PAUSE, KeysBinding = new List<string> { "Escape", "KeyP", "Pause" } },
+        new Controle() { C = E_Controle.BROUTE, KeysBinding = new List<string> { "KeyB" } },
+        new Controle() { C = E_Controle.DEBUG, KeysBinding = new List<string> { "F2" } },
+    };
+    Map _Map { get; set; } = new Map();
+    Task _GameLoopTask { get; set; } = Task.CompletedTask;
 
-		await base.OnInitializedAsync();
-	}
+    protected override async Task OnInitializedAsync()
+    {
+        int hChest = RNG.Next(_Map.Height / 4);
+        int wChest = RNG.Next(_Map.Width);
+        _Map[hChest][wChest] = E_Tile.CHEST;
 
-	protected override async Task OnAfterRenderAsync(bool firstRender)
-	{
-		if (firstRender)
-		{
-			await JS.InvokeAsync<object>("InitGame");
-			await _Canvas.FocusAsync();
-			_Timer.Elapsed += (s, e) => InvokeAsync(GameLoop);
-			_Timer.Start();
-		}
+        await base.OnInitializedAsync();
+    }
 
-		await base.OnAfterRenderAsync(firstRender);
-	}
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _Module = await JS.InvokeAsync<IJSObjectReference>("import", "/Scripts/05/GameRender.js");
+            await _Module.InvokeVoidAsync("InitGame");
+            await _Canvas.FocusAsync();
 
-	async Task GameLoop()
-	{
-		if (_KeysPressed.Contains(E_Controle.LEFT))
-		{
-			_Cerf.ToLeft = true;
-			_Cerf.VX -= Cerf.ACCELERATION;
-		}
-		else if (_KeysPressed.Contains(E_Controle.RIGHT))
-		{
-			_Cerf.ToLeft = false;
-			_Cerf.VX += Cerf.ACCELERATION;
-		}
-		else
-		{
-			if (_Cerf.VX > 0)
-			{
-				_Cerf.VX -= Cerf.FRICTION;
-			}
-			else if (_Cerf.VX < 0)
-			{
-				_Cerf.VX += Cerf.FRICTION;
-			}
-			if (Math.Abs(_Cerf.VX) < Cerf.FRICTION)
-			{
-				_Cerf.VX = 0;
-			}
-		}
+            _GameLoopTask = Task.Run(GameLoop);
+        }
 
-		if (_KeysPressed.Contains(E_Controle.JUMP))
-		{
-			_Cerf.Jump();
-			_KeysPressed.Remove(E_Controle.JUMP);
-		}
+        await base.OnAfterRenderAsync(firstRender);
+    }
 
-		if (_KeysPressed.Contains(E_Controle.BROUTE) && _KeysPressed.Count == 1)
-		{
-			_KeysPressed.Remove(E_Controle.BROUTE);
-			_Cerf.Broute = true;
-		}
-		else if (!_KeysPressed.Contains(E_Controle.BROUTE) && _KeysPressed.Count != 0)
-		{
-			_Cerf.Broute = false;
-		}
+    async Task GameLoop()
+    {
+        while (true)
+        {
+            try
+            {
+                DateTime start = DateTime.Now;
 
-		// Met à jour la position
-		_Cerf.X += _Cerf.VX;
-		_Cerf.Y += _Cerf.VY;
+                if (_KeysPressed.Contains(E_Controle.LEFT))
+                {
+                    _Cerf.ToLeft = true;
+                    _Cerf.VX -= Cerf.ACCELERATION;
+                }
+                else if (_KeysPressed.Contains(E_Controle.RIGHT))
+                {
+                    _Cerf.ToLeft = false;
+                    _Cerf.VX += Cerf.ACCELERATION;
+                }
+                else
+                {
+                    if (_Cerf.VX > 0)
+                    {
+                        _Cerf.VX -= Cerf.FRICTION;
+                    }
+                    else if (_Cerf.VX < 0)
+                    {
+                        _Cerf.VX += Cerf.FRICTION;
+                    }
+                    if (Math.Abs(_Cerf.VX) < Cerf.FRICTION)
+                    {
+                        _Cerf.VX = 0;
+                    }
+                }
 
-		_Cerf.CheckGroundCollision(_Map);
+                if (_KeysPressed.Contains(E_Controle.JUMP))
+                {
+                    _Cerf.Jump();
+                    _KeysPressed.Remove(E_Controle.JUMP);
+                }
 
-		try
-		{
-			await JS.InvokeAsync<object>("GameRender", _Cerf, _Map);
-		}
-		catch (Exception e)
-		{
-			Console.Error.WriteLine(e.Message);
-		}
-	}
+                if (_KeysPressed.Contains(E_Controle.BROUTE) && _KeysPressed.Count == 1)
+                {
+                    _KeysPressed.Remove(E_Controle.BROUTE);
+                    _Cerf.Broute = true;
+                }
+                else if (!_KeysPressed.Contains(E_Controle.BROUTE) && _KeysPressed.Count != 0)
+                {
+                    _Cerf.Broute = false;
+                }
 
-	public async ValueTask DisposeAsync()
-	{
-		_Timer.Stop();
-		_Timer.Dispose();
-		await Task.CompletedTask;
-	}
+                // Met à jour la position
+                _Cerf.X += _Cerf.VX;
+                _Cerf.Y += _Cerf.VY;
 
-	void AddKeyPress(KeyboardEventArgs args)
-	{
-		E_Controle? controle = _Controles.GetControle(args.Code);
+                _Cerf.CheckGroundCollision(_Map);
 
-		if (controle == null)
-			return;
+                try
+                {
+                    if (_Module != null)
+                        await _Module.InvokeVoidAsync("GameRender", _Cerf, _Map);
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine(e.Message);
+                }
 
-		if (!_KeysPressed.Contains(controle.Value))
-			_KeysPressed.Add(controle.Value);
-	}
+                DateTime end = DateTime.Now;
 
-	void RemoveKeyPress(KeyboardEventArgs args)
-	{
-		E_Controle? controle = _Controles.GetControle(args.Code);
+                if ((end - start).TotalMilliseconds < FRAME_DURATION)
+                    await Task.Delay((int)(FRAME_DURATION - (end - start).TotalMilliseconds));
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex.GetMessages().ToShow());
+            }
+        }
+    }
 
-		if (controle == null)
-			return;
+    public async ValueTask DisposeAsync()
+    {
+        if (_Module != null)
+        {
+            try
+            {
+                await _Module.DisposeAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex.GetMessages().ToShow());
+            }
+        }
+        if (!_GameLoopTask.IsCompleted)
+        {
+            try
+            {
+                _GameLoopTask?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex.GetMessages().ToShow());
+            }
+        }
+        await Task.CompletedTask;
+    }
 
-		if (_KeysPressed.Contains(controle.Value))
-			_KeysPressed.Remove(controle.Value);
-	}
+    void AddKeyPress(KeyboardEventArgs args)
+    {
+        E_Controle? controle = _Controles.GetControle(args.Code);
 
-	class Cerf
-	{
-		public const double MAX_VX = 5;
-		public const double MAX_VY = 15;
-		public const double GRAVITY = 0.3;
-		public const double FRICTION = 0.1;
-		public const double ACCELERATION = 0.5;
-		public const double JUMP_VELOCITY = -8;
+        if (controle == null)
+            return;
 
-		double _VX { get; set; }
-		double _VY { get; set; }
+        if (controle == E_Controle.DEBUG)
+        {
+            _Cerf.ShowHitbox = !_Cerf.ShowHitbox;
+            return;
+        }
 
-		public double X { get; set; }
-		public double Y { get; set; }
-		public double VX
-		{
-			get => _VX;
-			set
-			{
-				if (value < -MAX_VX)
-				{
-					_VX = -MAX_VX;
-					return;
-				}
-				if (value > MAX_VX)
-				{
-					_VX = MAX_VX;
-					return;
-				}
-				_VX = value;
-			}
-		}
-		public double VY
-		{
-			get => _VY;
-			set
-			{
-				if (value < -MAX_VY)
-				{
-					_VY = -MAX_VY;
-					return;
-				}
-				if (value > MAX_VY)
-				{
-					_VY = MAX_VY;
-					return;
-				}
-				_VY = value;
-			}
-		}
-		public bool ToLeft { get; set; } = false;
-		public bool HasInAir { get; set; } = false;
-		public bool HasDoubleJumped { get; set; } = false;
-		public bool Broute { get; set; } = false;
 
-		public void Jump()
-		{
-			if (!HasInAir)
-			{
-				VY = JUMP_VELOCITY;
-				return;
-			}
-			if (!HasDoubleJumped)
-			{
-				VY = JUMP_VELOCITY;
-				HasDoubleJumped = true;
-				return;
-			}
-		}
+        if (!_KeysPressed.Contains(controle.Value))
+            _KeysPressed.Add(controle.Value);
+    }
 
-		public void CheckGroundCollision(Map map)
-		{
-			// Vérifie par rapport à la map si le cerf est au sol ou sur une plateforme (E_Tile & 1 == 1)
-			// Les tiles font 32x32 et le cerf 64x64
-			int tileX1 = (int)(X / 32);
-			int tileX2 = (int)((X + 63) / 32);
-			int tileY = (int)((Y + 64) / 32);
+    void RemoveKeyPress(KeyboardEventArgs args)
+    {
+        E_Controle? controle = _Controles.GetControle(args.Code);
 
-			if(X < 0)
-			{
-				X = 0;
-				VX = 0;
-			}
-			if (X + 64 > map.Width * 32)
-			{
-				X = map.Width * 32 - 64;
-				VX = 0;
-			}
-			if (Y < 0)
-			{
-				Y = 0;
-				VY = 0;
-			}
-			if (Y + 64 > map.Height * 32)
-			{
-				Y = map.Height * 32 - 64;
-				VY = 0;
-				HasInAir = false;
-				HasDoubleJumped = false;
-			}
+        if (controle == null)
+            return;
 
-			if ((map[tileY][tileX1] & E_Tile.GROUND) == E_Tile.GROUND || (map[tileY][tileX2] & E_Tile.GROUND) == E_Tile.GROUND)
-			{
-				if (VY > 0)
-				{
-					Y = tileY * 32 - 64;
-					VY = 0;
-					HasInAir = false;
-					HasDoubleJumped = false;
-				}
-			}
-			else
-			{
-				HasInAir = true;
-				VY += GRAVITY;
-			}
+        if (_KeysPressed.Contains(controle.Value))
+            _KeysPressed.Remove(controle.Value);
+    }
 
-			// if (Y + 64 >= groundY)
-			// {
-			// 	Y = groundY - 64;
-			// 	VY = 0;
-			// 	HasInAir = false;
-			// 	HasDoubleJumped = false;
-			// }
-			// else
-			// {
-			// 	HasInAir = true;
-			// 	VY += GRAVITY;
-			// }
-		}
-	}
+    class Cerf
+    {
+        public const double MAX_VX = 5;
+        public const double MAX_VY = 15;
+        public const double GRAVITY = 0.3;
+        public const double FRICTION = 0.1;
+        public const double ACCELERATION = 0.5;
+        public const double JUMP_VELOCITY = -8;
 
-	class Controles : List<Controle>
-	{
-		public E_Controle? GetControle(string key)
-		{
-			foreach (var controle in this)
-			{
-				if (controle.KeysBinding.Contains(key))
-				{
-					return controle.C;
-				}
-			}
+        double _VX { get; set; }
+        double _VY { get; set; }
 
-			return null;
-		}
-	}
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double VX
+        {
+            get => _VX;
+            set
+            {
+                if (value < -MAX_VX)
+                {
+                    _VX = -MAX_VX;
+                    return;
+                }
+                if (value > MAX_VX)
+                {
+                    _VX = MAX_VX;
+                    return;
+                }
+                _VX = value;
+            }
+        }
+        public double VY
+        {
+            get => _VY;
+            set
+            {
+                if (value < -MAX_VY)
+                {
+                    _VY = -MAX_VY;
+                    return;
+                }
+                if (value > MAX_VY)
+                {
+                    _VY = MAX_VY;
+                    return;
+                }
+                _VY = value;
+            }
+        }
+        public bool ToLeft { get; set; } = false;
+        public bool HasInAir { get; set; } = false;
+        public bool HasDoubleJumped { get; set; } = false;
+        public bool Broute { get; set; } = false;
+        public bool ShowHitbox { get; set; } = false;
 
-	class Controle
-	{
-		public E_Controle C { get; set; }
-		public List<string> KeysBinding { get; set; } = new List<string>();
-	}
+        public void Jump()
+        {
+            if (!HasInAir)
+            {
+                VY = JUMP_VELOCITY;
+                return;
+            }
+            if (!HasDoubleJumped)
+            {
+                VY = JUMP_VELOCITY;
+                HasDoubleJumped = true;
+                return;
+            }
+        }
 
-	class Map : List<List<E_Tile>>
-	{
-		public int Width { get; set; } = 32;
-		public int Height { get; } = 25;
+        public void CheckGroundCollision(Map map)
+        {
+            // Vérifie par rapport à la map si le cerf est au sol ou sur une plateforme (E_Tile & 1 == 1)
+            // Les tiles font 32x32 et le cerf 64x64
+            int tileX1 = (int)(X / 32);
+            int tileX2 = (int)((X + 63) / 32);
+            int tileY = (int)((Y + 65) / 32);
 
-		public Map(int width = 32, int heigth = 25, int groundPos = 22)
-		{
-			Width = width;
-			Height = heigth;
-			for (int y = 0; y < heigth; y++)
-			{
-				var line = new List<E_Tile>();
-				for (int x = 0; x < width; x++)
-				{
-					if (y < groundPos)
-					{
-						line.Add(E_Tile.AIR);
-					}
-					else
-					{
-						line.Add(E_Tile.GROUND);
-					}
-				}
-				Add(line);
-			}
-		}
-	}
+            if (X < 0)
+            {
+                X = 0;
+                VX = 0;
+            }
+            if (X + 64 > map.Width * 32)
+            {
+                X = map.Width * 32 - 64;
+                VX = 0;
+            }
+            if (Y < 0)
+            {
+                Y = 0;
+                VY = 0;
+            }
+            if (Y + 64 > map.Height * 32)
+            {
+                Y = map.Height * 32 - 64;
+                VY = 0;
+                HasInAir = false;
+                HasDoubleJumped = false;
+            }
 
-	enum E_Controle
-	{
-		LEFT,
-		RIGHT,
-		UP,
-		DOWN,
-		JUMP,
-		BROUTE,
-		PAUSE
-	}
+            bool groundDetected = false;
 
-	enum E_Tile
-	{
-		AIR = 0,
-		GROUND = 1,
-		PLATFORM = 3,
-		CHEST = 4
-	}
+            if (map.Height > tileY)
+            {
+                for (int i = tileX1; i <= tileX2; i++)
+                {
+                    if (map.Width > i && (map[tileY][i] & E_Tile.GROUND) == E_Tile.GROUND)
+                    {
+                        groundDetected = true;
+                        if (VY > 0)
+                        {
+                            Y = tileY * 32 - 64;
+                            VY = 0;
+                            HasInAir = false;
+                            HasDoubleJumped = false;
+                        }
+                        break;
+                    }
+                }
+            }
+
+
+            if (!groundDetected)
+            {
+                HasInAir = true;
+                VY += GRAVITY;
+            }
+
+            // if (Y + 64 >= groundY)
+            // {
+            // 	Y = groundY - 64;
+            // 	VY = 0;
+            // 	HasInAir = false;
+            // 	HasDoubleJumped = false;
+            // }
+            // else
+            // {
+            // 	HasInAir = true;
+            // 	VY += GRAVITY;
+            // }
+        }
+    }
+
+    class Controles : List<Controle>
+    {
+        public E_Controle? GetControle(string key)
+        {
+            foreach (var controle in this)
+            {
+                if (controle.KeysBinding.Contains(key))
+                {
+                    return controle.C;
+                }
+            }
+
+            return null;
+        }
+    }
+
+    class Controle
+    {
+        public E_Controle C { get; set; }
+        public List<string> KeysBinding { get; set; } = new List<string>();
+    }
+
+    class Map : List<List<E_Tile>>
+    {
+        public int Width { get; set; } = 32;
+        public int Height { get; } = 25;
+
+        public Map(int width = 32, int heigth = 25, int groundPos = 22)
+        {
+            Width = width;
+            Height = heigth;
+            for (int y = 0; y < heigth; y++)
+            {
+                var line = new List<E_Tile>();
+                for (int x = 0; x < width; x++)
+                {
+                    if (y < groundPos)
+                    {
+                        line.Add(E_Tile.AIR);
+                    }
+                    else
+                    {
+                        line.Add(E_Tile.GROUND);
+                    }
+                }
+                Add(line);
+            }
+        }
+    }
+
+    enum E_Controle
+    {
+        LEFT,
+        RIGHT,
+        UP,
+        DOWN,
+        JUMP,
+        BROUTE,
+        PAUSE,
+        DEBUG
+    }
+
+    enum E_Tile
+    {
+        AIR = 0,
+        GROUND = 1,
+        PLATFORM = 3,
+        CHEST = 4
+    }
 }

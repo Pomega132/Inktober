@@ -1,4 +1,4 @@
-@page "/2025/11"
+﻿@page "/2025/11"
 @using Webtober2025.Client.Models
 
 @implements IMouseState
@@ -8,249 +8,251 @@
 @inject IDialogService DialogService
 
 <div class="d-flex justify-space-between">
-	<h3>11 - Piqûre</h3>
+    <h3>11 - Piqûre</h3>
 
-	<div class="d-flex gap-5">
-		<MudText Typo="Typo.h6">Scrore : @($"{DateTime.Now - _StartGame:mm\\:ss}")</MudText>
-		<MudText Typo="Typo.h6">Difficulté : @_Difficulty</MudText>
-	</div>
+    <div class="d-flex gap-5">
+        <MudText Typo="Typo.h6">Scrore : @($"{DateTime.Now - _StartGame:mm\\:ss}")</MudText>
+        <MudText Typo="Typo.h6">Difficulté : @_Difficulty</MudText>
+    </div>
 </div>
 
 <MudPaper Class="flex-1 d-flex justify-space-around">
-	<div>
-		<canvas id="game" class="border" tabindex="0" width="1000" height="800" @onmousedown="((IMouseState)this).ClickDown" @onmousemove="((IMouseState)this).MouseMove" @onmouseup="((IMouseState)this).ClickUp"></canvas>
-	</div>
+    <div>
+        <canvas id="game" class="border" tabindex="0" width="1000" height="800" @onmousedown="((IMouseState)this).ClickDown" @onmousemove="((IMouseState)this).MouseMove" @onmouseup="((IMouseState)this).ClickUp"></canvas>
+    </div>
 </MudPaper>
 
 @code {
-	const int DIFFICULTY_INCREASE_INTERVAL = 5000; //ms
+    const int DIFFICULTY_INCREASE_INTERVAL = 5000; //ms
 
-	IJSObjectReference? _Module { get; set; }
-	DateTime _StartGame { get; set; } = DateTime.Now;
-	public MouseState MouseState { get; set; } = new MouseState();
-	Rect _Player { get; set; } = new Rect(450, 700, 10, 10);
-	List<Bee> _Bees { get; set; } = new List<Bee>();
-	List<Tire> _Tires { get; set; } = new List<Tire>();
-	Task _GameLoopTask { get; set; } = Task.CompletedTask;
-	int _Difficulty { get; set; } = 5;
-	DateTime LastDifficultyIncrease { get; set; } = DateTime.Now;
-	TimeSpan? _GameOver { get; set; } = null;
+    IJSObjectReference? _Module { get; set; }
+    DateTime _StartGame { get; set; } = DateTime.Now;
+    public MouseState MouseState { get; set; } = new MouseState();
+    Rect _Player { get; set; } = new Rect(450, 700, 10, 10);
+    List<Bee> _Bees { get; set; } = new List<Bee>();
+    List<Tire> _Tires { get; set; } = new List<Tire>();
+    Task _GameLoopTask { get; set; } = Task.CompletedTask;
+    int _Difficulty { get; set; } = 5;
+    DateTime LastDifficultyIncrease { get; set; } = DateTime.Now;
+    TimeSpan? _GameOver { get; set; } = null;
+    bool _Looping { get; set; } = true;
 
-	protected override async Task OnAfterRenderAsync(bool firstRender)
-	{
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
 
-		if (firstRender)
-		{
-			_Module ??= await JS.InvokeAsync<IJSObjectReference>("import", "/Scripts/11/GameRender.js");
+        if (firstRender)
+        {
+            _Module ??= await JS.InvokeAsync<IJSObjectReference>("import", "/Scripts/11/GameRender.js");
 
-			await _Module.InvokeVoidAsync("InitGame");
+            await _Module.InvokeVoidAsync("InitGame");
 
-			InitGame();
-			_GameLoopTask = Task.Run(GameLoop);
-		}
+            InitGame();
+            _GameLoopTask = Task.Run(GameLoop);
+        }
 
-		await base.OnAfterRenderAsync(firstRender);
-	}
+        await base.OnAfterRenderAsync(firstRender);
+    }
 
-	void InitGame()
-	{
-		_StartGame = DateTime.Now;
-		_GameOver = null;
-		_Bees = new List<Bee>();
-		for (int i = 0; i < _Difficulty; i++)
-		{
-			_Bees.Add(new Bee(new Point(RNG.NextDouble(0, 1000 - 50), RNG.NextDouble(0, 800 - 50))));
-		}
-		_Tires = new List<Tire>();
-		_Difficulty = 5;
-		LastDifficultyIncrease = DateTime.Now;
-	}
+    void InitGame()
+    {
+        _StartGame = DateTime.Now;
+        _GameOver = null;
+        _Bees = new List<Bee>();
+        for (int i = 0; i < _Difficulty; i++)
+        {
+            _Bees.Add(new Bee(new Point(RNG.NextDouble(0, 1000 - 50), RNG.NextDouble(0, 800 - 50))));
+        }
+        _Tires = new List<Tire>();
+        _Difficulty = 5;
+        LastDifficultyIncrease = DateTime.Now;
+    }
 
-	async void GameLoop()
-	{
-		while (true)
-		{
-			if (_GameOver is null)
-			{
-				DateTime start = DateTime.Now;
-				if (_Module is not null)
-				{
-					_Player.Position = new Point(MouseState.Position.X - _Player.Size.X / 2, MouseState.Position.Y - _Player.Size.Y / 2);
+    async void GameLoop()
+    {
+        while (_Looping)
+        {
+            if (_GameOver is null)
+            {
+                DateTime start = DateTime.Now;
+                if (_Module is not null)
+                {
+                    _Player.Position = new Point(MouseState.Position.X - _Player.Size.X / 2, MouseState.Position.Y - _Player.Size.Y / 2);
 
-					// Augmenter la difficulté
-					if ((DateTime.Now - LastDifficultyIncrease).TotalMilliseconds > DIFFICULTY_INCREASE_INTERVAL)
-					{
-						LastDifficultyIncrease = DateTime.Now;
-						_Difficulty++;
-						_Bees.Add(new Bee(new Point(RNG.NextDouble(0, 1000 - 50), RNG.NextDouble(0, 800 - 50))));
-					}
+                    // Augmenter la difficulté
+                    if ((DateTime.Now - LastDifficultyIncrease).TotalMilliseconds > DIFFICULTY_INCREASE_INTERVAL)
+                    {
+                        LastDifficultyIncrease = DateTime.Now;
+                        _Difficulty++;
+                        _Bees.Add(new Bee(new Point(RNG.NextDouble(0, 1000 - 50), RNG.NextDouble(0, 800 - 50))));
+                    }
 
-					// Mettre à jour les abeilles
-					for (int i = _Bees.Count - 1; i > -1; i--)
-					{
-						Bee bee = _Bees[i];
-						Tire? tire = bee.UpdatePosition(MouseState.Position, _Difficulty);
-						if (tire is not null)
-							_Tires.Add(tire);
-					}
+                    // Mettre à jour les abeilles
+                    for (int i = _Bees.Count - 1; i > -1; i--)
+                    {
+                        Bee bee = _Bees[i];
+                        Tire? tire = bee.UpdatePosition(MouseState.Position, _Difficulty);
+                        if (tire is not null)
+                            _Tires.Add(tire);
+                    }
 
-					// Mettre à jour les tirs
-					for (int i = _Tires.Count - 1; i > -1; i--)
-					{
-						Tire tire = _Tires[i];
+                    // Mettre à jour les tirs
+                    for (int i = _Tires.Count - 1; i > -1; i--)
+                    {
+                        Tire tire = _Tires[i];
 
-						tire.UpdatePos();
+                        tire.UpdatePos();
 
-						if (tire.IsColliding(_Player))
-						{
-							_GameOver = DateTime.Now - _StartGame;
-						}
+                        if (tire.IsColliding(_Player))
+                        {
+                            _GameOver = DateTime.Now - _StartGame;
+                        }
 
-						if (tire.Position.X < -tire.Size.X || tire.Position.X > 1000 || tire.Position.Y < -tire.Size.Y || tire.Position.Y > 800)
-						{
-							_Tires.RemoveAt(i);
-						}
-					}
+                        if (tire.Position.X < -tire.Size.X || tire.Position.X > 1000 || tire.Position.Y < -tire.Size.Y || tire.Position.Y > 800)
+                        {
+                            _Tires.RemoveAt(i);
+                        }
+                    }
 
-					await _Module.InvokeVoidAsync("RenderGame", _Player, _Tires, _Bees);
-				}
+                    await _Module.InvokeVoidAsync("RenderGame", _Player, _Tires, _Bees);
+                }
 
-				DateTime end = DateTime.Now;
+                DateTime end = DateTime.Now;
 
-				var elapsed = (end - start).TotalMilliseconds;
-				if (elapsed < 16)
-					await Task.Delay((int)(16 - elapsed)); // ~60 FPS
-			}
-			else
-			{
-				var result = await DialogService.ShowMessageBox("Game Over", $"Vous avez tenu {_GameOver:mm\\:ss} secondes\nVoulez-vous recommencer ?", "Recommencer");
-				if (result == true)
-				{
-					InitGame();
-				}
-			}
-		}
-	}
+                var elapsed = (end - start).TotalMilliseconds;
+                if (elapsed < 16)
+                    await Task.Delay((int)(16 - elapsed)); // ~60 FPS
+            }
+            else
+            {
+                var result = await DialogService.ShowMessageBox("Game Over", $"Vous avez tenu {_GameOver:mm\\:ss} secondes\nVoulez-vous recommencer ?", "Recommencer");
+                if (result == true)
+                {
+                    InitGame();
+                }
+            }
+        }
+    }
 
-	public async ValueTask DisposeAsync()
-	{
-		if (_Module is not null)
-		{
-			await _Module.DisposeAsync();
-		}
+    public async ValueTask DisposeAsync()
+    {
+        if (_GameLoopTask is not null)
+        {
+            try
+            {
+                _Looping = false;
+                await _GameLoopTask;
+            }
+            catch { }
+        }
 
-		if (_GameLoopTask is not null)
-		{
-			try
-			{
-				await _GameLoopTask;
-			}
-			catch { }
-		}
-	}
+        if (_Module is not null)
+        {
+            await _Module.DisposeAsync();
+        }
+    }
 
-	class Bee : Rect
-	{
-		const double MIN_MOVE_DURATION = 2000; //ms
-		const double MAX_MOVE_DURATION = 5000; //ms
-		const double WAIT_BEFORE_ATTACK = 500; //ms
-		const double MAX_VELOCITY_CHANGE = 5;
-		const double MAX_VELOCITY = 10;
-		const int NB_FRAMES = 2;
-		const double FRAME_DURATION = 100; //ms
+    class Bee : Rect
+    {
+        const double MIN_MOVE_DURATION = 2000; //ms
+        const double MAX_MOVE_DURATION = 5000; //ms
+        const double WAIT_BEFORE_ATTACK = 500; //ms
+        const double MAX_VELOCITY_CHANGE = 5;
+        const double MAX_VELOCITY = 10;
+        const int NB_FRAMES = 2;
+        const double FRAME_DURATION = 100; //ms
 
-		public bool ToLeft { get; set; } = false;
-		public int Frame { get; set; } = 0;
-		public DateTime LastFrameChange { get; set; } = DateTime.Now;
+        public bool ToLeft { get; set; } = false;
+        public int Frame { get; set; } = 0;
+        public DateTime LastFrameChange { get; set; } = DateTime.Now;
 
-		private DateTime LastMove { get; set; } = DateTime.Now;
-		private DateTime MoveStart { get; set; } = DateTime.Now;
+        private DateTime LastMove { get; set; } = DateTime.Now;
+        private DateTime MoveStart { get; set; } = DateTime.Now;
 
-		private double MoveDuration { get; set; } = RNG.NextDouble(MIN_MOVE_DURATION, MAX_MOVE_DURATION); //ms
+        private double MoveDuration { get; set; } = RNG.NextDouble(MIN_MOVE_DURATION, MAX_MOVE_DURATION); //ms
 
-		public Point Velocity { get; set; } = new Point(0, 0);
+        public Point Velocity { get; set; } = new Point(0, 0);
 
-		public Bee(Point position)
-		{
-			Position = position;
-			Size = new Point(50, 50);
-		}
+        public Bee(Point position)
+        {
+            Position = position;
+            Size = new Point(50, 50);
+        }
 
-		public Tire? UpdatePosition(Point playerPosition, int difficulty)
-		{
-			Tire? tire = null;
+        public Tire? UpdatePosition(Point playerPosition, int difficulty)
+        {
+            Tire? tire = null;
 
-			// Animation
-			if ((DateTime.Now - LastFrameChange).TotalMilliseconds > FRAME_DURATION)
-			{
-				Frame = (Frame + 1) % NB_FRAMES;
-				LastFrameChange = DateTime.Now;
-			}
+            // Animation
+            if ((DateTime.Now - LastFrameChange).TotalMilliseconds > FRAME_DURATION)
+            {
+                Frame = (Frame + 1) % NB_FRAMES;
+                LastFrameChange = DateTime.Now;
+            }
 
-			if ((DateTime.Now - MoveStart).TotalMilliseconds < MoveDuration) // En mouvement
-			{
-				Velocity.X += RNG.NextDouble(-MAX_VELOCITY_CHANGE, MAX_VELOCITY_CHANGE);
-				Velocity.Y += RNG.NextDouble(-MAX_VELOCITY_CHANGE, MAX_VELOCITY_CHANGE);
+            if ((DateTime.Now - MoveStart).TotalMilliseconds < MoveDuration) // En mouvement
+            {
+                Velocity.X += RNG.NextDouble(-MAX_VELOCITY_CHANGE, MAX_VELOCITY_CHANGE);
+                Velocity.Y += RNG.NextDouble(-MAX_VELOCITY_CHANGE, MAX_VELOCITY_CHANGE);
 
-				Velocity.X = Math.Clamp(Velocity.X, -MAX_VELOCITY, MAX_VELOCITY);
-				Velocity.Y = Math.Clamp(Velocity.Y, -MAX_VELOCITY, MAX_VELOCITY);
+                Velocity.X = Math.Clamp(Velocity.X, -MAX_VELOCITY, MAX_VELOCITY);
+                Velocity.Y = Math.Clamp(Velocity.Y, -MAX_VELOCITY, MAX_VELOCITY);
 
-				Position.X += Velocity.X;
-				Position.Y += Velocity.Y;
+                Position.X += Velocity.X;
+                Position.Y += Velocity.Y;
 
-				if (Position.X < 0 || Position.X + Size.X > 1000)
-				{
-					Velocity.X = -Velocity.X;
-					Position.X = Math.Clamp(Position.X, 0, 1000 - Size.X);
-				}
-				if (Position.Y < 0 || Position.Y + Size.Y > 800)
-				{
-					Velocity.Y = -Velocity.Y;
-					Position.Y = Math.Clamp(Position.Y, 0, 800 - Size.Y);
-				}
+                if (Position.X < 0 || Position.X + Size.X > 1000)
+                {
+                    Velocity.X = -Velocity.X;
+                    Position.X = Math.Clamp(Position.X, 0, 1000 - Size.X);
+                }
+                if (Position.Y < 0 || Position.Y + Size.Y > 800)
+                {
+                    Velocity.Y = -Velocity.Y;
+                    Position.Y = Math.Clamp(Position.Y, 0, 800 - Size.Y);
+                }
 
-				ToLeft = Velocity.X < 0;
+                ToLeft = Velocity.X < 0;
 
-				LastMove = DateTime.Now;
-			}
-			else // Ce prépare à attaquer
-			{
-				Velocity = new Point(0, 0);
-				// Se tourner vers le joueur
-				ToLeft = Position.X + Size.X / 2 > playerPosition.X;
+                LastMove = DateTime.Now;
+            }
+            else // Ce prépare à attaquer
+            {
+                Velocity = new Point(0, 0);
+                // Se tourner vers le joueur
+                ToLeft = Position.X + Size.X / 2 > playerPosition.X;
 
-				if ((DateTime.Now - LastMove).TotalMilliseconds > WAIT_BEFORE_ATTACK)
-				{
-					tire = new Tire(new Point(Position.X + Size.X / 2, Position.Y + Size.Y / 2), playerPosition, 5 + difficulty / 2d);
-					MoveStart = DateTime.Now;
-					MoveDuration = RNG.NextDouble(MIN_MOVE_DURATION, MAX_MOVE_DURATION);
-				}
-			}
+                if ((DateTime.Now - LastMove).TotalMilliseconds > WAIT_BEFORE_ATTACK)
+                {
+                    tire = new Tire(new Point(Position.X + Size.X / 2, Position.Y + Size.Y / 2), playerPosition, 5 + difficulty / 2d);
+                    MoveStart = DateTime.Now;
+                    MoveDuration = RNG.NextDouble(MIN_MOVE_DURATION, MAX_MOVE_DURATION);
+                }
+            }
 
-			return tire;
-		}
-	}
+            return tire;
+        }
+    }
 
-	class Tire : Rect
-	{
-		const int HEIGHT = 21;
-		const int WIDTH = 27;
-		const double SENDER_DISTANCE_SPAWN = 50 + HEIGHT / 2d + 10;
+    class Tire : Rect
+    {
+        const int HEIGHT = 21;
+        const int WIDTH = 27;
+        const double SENDER_DISTANCE_SPAWN = 25 + HEIGHT / 2d;
 
-		public Point Velocity { get; set; }
-		public double Rotation { get; set; } = 0;
+        public Point Velocity { get; set; }
+        public double Rotation { get; set; } = 0;
 
-		public Tire(Point positionTireur, Point positionCible, double speed)
-		{
-			Rotation = Math.Atan2(positionCible.Y - positionTireur.Y, positionCible.X - positionTireur.X);
-			Position = new Point(positionTireur.X + Math.Cos(Rotation) * SENDER_DISTANCE_SPAWN - WIDTH / 2d, positionTireur.Y + Math.Sin(Rotation) * SENDER_DISTANCE_SPAWN - HEIGHT / 2d);
-			Size = new Point(WIDTH, HEIGHT);
-			Velocity = new Point(Math.Cos(Rotation) * speed, Math.Sin(Rotation) * speed);
-		}
+        public Tire(Point positionTireur, Point positionCible, double speed)
+        {
+            Rotation = Math.Atan2(positionCible.Y - positionTireur.Y, positionCible.X - positionTireur.X);
+            Position = new Point(positionTireur.X + Math.Cos(Rotation) * SENDER_DISTANCE_SPAWN - WIDTH / 2d, positionTireur.Y + Math.Sin(Rotation) * SENDER_DISTANCE_SPAWN - HEIGHT / 2d);
+            Size = new Point(WIDTH, HEIGHT);
+            Velocity = new Point(Math.Cos(Rotation) * speed, Math.Sin(Rotation) * speed);
+        }
 
-		public void UpdatePos()
-		{
-			Position = new Point(Position.X + Velocity.X, Position.Y + Velocity.Y);
-		}
-	}
+        public void UpdatePos()
+        {
+            Position = new Point(Position.X + Velocity.X, Position.Y + Velocity.Y);
+        }
+    }
 }

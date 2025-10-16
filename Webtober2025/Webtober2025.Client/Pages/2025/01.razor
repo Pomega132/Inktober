@@ -1,4 +1,4 @@
-@page "/2025/1/{PlayerKey?}"
+﻿@page "/2025/1/{PlayerKey?}"
 @using Webtober2025.Client.Models._01
 @using Webtober2025.Client.Pages._2025.Templates._01
 
@@ -11,203 +11,305 @@
 <h3>01 - Moustache</h3>
 @if (_Game is not null)
 {
-	<MudText Typo="Typo.h4">ID de la Partie : @_Game.GameKey | @_Game.Players.Count / @_Game.MaxPlayers Joueurs</MudText>
+    <MudText Typo="Typo.h4">ID de la Partie : @_Game.GameKey | @_Game.Players.Count / @_Game.MaxPlayers Joueurs</MudText>
 }
 
 
 <MudStack Row="true">
 
-	<MudPaper Class="flex-1">
-		@if (_InGame)
-		{
-			<Game />
-		}
-		else
-		{
-			<MoustacheCustome HubConnection="_HubConnection" />
-		}
-	</MudPaper>
+    <MudPaper Class="d-flex flex-1 flex-column">
+        @if (_InGame)
+        {
+            <Game Personnages="_Game?.Grille" HubConnection="_HubConnection" />
+        }
+        else
+        {
+            <MoustacheCustome HubConnection="_HubConnection" />
+        }
+    </MudPaper>
 
-	<MudPaper Class="d-none">
-		<MudStack Class="flex-1">
-			<MudText Typo="Typo.h5">Joueurs :</MudText>
-			@if (_Game is not null)
-			{
-				@foreach (var player in _Game.Players)
-				{
-					<MudText Typo="Typo.body1">@player.Name @(player.IsReady ? "(Prêt)" : "") @(player.Name == _PlayerName ? "(Vous)" : "")</MudText>
-				}
-			}
-			else
-			{
-				<MudText Typo="Typo.body1">Aucun joueur connecté</MudText>
-			}
-			@if (!_Game?.IsStarted ?? false && _Game.Creator.Id == PlayerKey)
-			{
-				<MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="_Game?.Players.Any(p => !p.IsReady) ?? true" OnClick="StartGame">Lancer la partie</MudButton>
-			}
-			<MudStack @ref="ChatMessageStack" Class="flex-1 overflow-auto">
-				@foreach (var message in _Messages)
-				{
-					<MudText Typo="Typo.body1"><b>@message.Name :</b> @message.Message</MudText>
-				}
-			</MudStack>
-			<MudStack Row="true">
-				<MudTextField @bind-Value="_Message" Label="Message" Variant="Variant.Outlined" Immediate="true" Lines="3" />
-				<div class="d-flex align-center">
-					<MudIconButton Icon="@Icons.Material.Filled.Send" Color="Color.Primary" Disabled="string.IsNullOrWhiteSpace(_Message)" OnClick="SendMessage" />
-				</div>
-			</MudStack>
-		</MudStack>
-	</MudPaper>
+    <MudPaper Class="d-flex pa-2" Width="300px">
+        <MudStack Class="flex-1">
+            <MudText Typo="Typo.h5">Joueurs :</MudText>
+            @if (_Game is not null)
+            {
+                @foreach (var player in _Game.Players)
+                {
+                    <MudText Class="d-flex gap-1" Typo="Typo.body1" Color="GetNameColor(player.Name)">
+                        @player.Name
+                        @if (!_Game.IsStarted && player.IsReady)
+                        {
+                            <MudText Inline="true" Color="Color.Success"> (Prêt)</MudText>
+                        }
+                        else if (_Game.IsStarted)
+                        {
+                            <MudText Inline="true" Color="Color.Warning"> (Score : @player.Score)</MudText>
+                        }
+                        @if (player.Id == _Game.Creator.Id)
+                        {
+                            <MudText Inline="true" Color="Color.Error"> (Créateur)</MudText>
+                        }
+                        @if (_Game.IsStarted && player.Id == _PlayerTourId)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Color="Color.Warning" />
+                        }
+                    </MudText>
+                }
+            }
+            else
+            {
+                <MudText Typo="Typo.body1">Aucun joueur connecté</MudText>
+            }
+            @if ((!_Game?.IsStarted ?? false) && _Game?.Creator.Id == PlayerKey)
+            {
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="_Game?.Players.Any(p => !p.IsReady) ?? true" OnClick="StartGame">Lancer la partie</MudButton>
+            }
+            <MudDivider Class="flex-none" />
+            <div @ref="_ChatMessageStack" Class=" d-flex flex-column flex-1 overflow-auto">
+                @foreach (var message in _Messages)
+                {
+                    <MudText Typo="Typo.body1" Style="word-break: break-word;"><MudText Inline="true" HtmlTag="b" Color="GetNameColor(message.Name)">@message.Name :</MudText> @message.Text</MudText>
+                }
+            </div>
+            <MudStack Row="true">
+                <MudTextField @bind-Value="_Message" Label="Message" Variant="Variant.Outlined" OnKeyDown="DetectEnter" Immediate="true" />
+                <div class="d-flex align-center">
+                    <MudIconButton Icon="@Icons.Material.Filled.Send" Color="Color.Primary" Disabled="string.IsNullOrWhiteSpace(_Message)" OnClick="SendMessage" />
+                </div>
+            </MudStack>
+        </MudStack>
+    </MudPaper>
 
 </MudStack>
 
 <script>
-	window.ScrollEnd = (element) => {
-		if (element) {
-			element.scrollTop = element.scrollHeight;
-		}
-	};
+    window.ScrollEnd = (element) => {
+    if (element) {
+    element.scrollTop = element.scrollHeight;
+    }
+    };
 </script>
 
 @code {
-	private MudStack? ChatMessageStack { get; set; }
-	private HubConnection? _HubConnection { get; set; }
-	private bool _InGame { get; set; } = false;
-	private string? _PlayerName { get; set; }
-	private GameHub.Game? _Game { get; set; }
-	private List<List<Personnage>>? _Personnages { get; set; }
-	private string _Message { get; set; } = string.Empty;
-	private List<(string Name, string Message)> _Messages { get; set; } = new List<(string Name, string Message)>();
+    record Message(string Name, string Text);
 
-	[Parameter]
-	public string? PlayerKey { get; set; }
+    private ElementReference _ChatMessageStack { get; set; }
+    private HubConnection? _HubConnection { get; set; }
+    private bool _InGame { get; set; } = false;
+    private string? _PlayerName { get; set; }
+    private string? _PlayerTourId { get; set; }
+    private bool _IsPlayerTour => _PlayerTourId == PlayerKey;
+    private GameHub.Game? _Game { get; set; }
+    private string _Message { get; set; } = string.Empty;
+    private List<Message> _Messages { get; set; } = new List<Message>();
 
-
-	protected override async Task OnInitializedAsync()
-	{
-		_HubConnection = new HubConnectionBuilder()
-			 .WithUrl(Navigation.ToAbsoluteUri("/2025/01_gamehub"))
-			 .Build();
-
-		_HubConnection.On<string>(GameHub.ACTION_SERVER_JOIN, (playerKey) =>
-		{
-			Navigation.NavigateTo($"/2025/1/{playerKey}");
-		});
-
-		_HubConnection.On<string, string>(GameHub.ACTION_RECEIVE_MESSAGE, async (name, message) =>
-		{
-			_Messages.Add((name, message));
-			await InvokeAsync(StateHasChanged);
-			await JS.InvokeVoidAsync("ScrollEnd", ChatMessageStack);
-		});
+    [Parameter]
+    public string? PlayerKey { get; set; }
 
 
+    protected override async Task OnInitializedAsync()
+    {
+        _HubConnection = new HubConnectionBuilder()
+                .WithUrl(Navigation.ToAbsoluteUri("/2025/01_gamehub"))
+                .Build();
 
-		_HubConnection.On<bool, string, string?>(GameHub.ACTION_CONNECT_RESPOSE, (success, playerName, jsonGame) =>
-		{
-			if (success)
-			{
-				var game = string.IsNullOrWhiteSpace(jsonGame) ? null : JsonConvert.DeserializeObject<GameHub.Game>(jsonGame!);
+        _HubConnection.On<bool, string>(GameHub.ACTION_SERVER_JOIN, (success, message) =>
+        {
+            if (success)
+            {
+                Navigation.NavigateTo($"/2025/1/{message}");
+            }
+            else
+            {
+                SnackbarService.Add(message, Severity.Error);
+            }
+        });
 
-				_PlayerName = playerName;
-				_Game = game;
-				InvokeAsync(StateHasChanged);
-			}
-			else
-			{
-				_PlayerName = null;
-				SnackbarService.Add(playerName, Severity.Error);
-			}
-		});
+        _HubConnection.On<string, string>(GameHub.ACTION_RECEIVE_MESSAGE, async (name, message) =>
+        {
+            _Messages.Add(new Message(name, message));
+            await InvokeAsync(StateHasChanged);
+            try
+            {
+                await JS.InvokeVoidAsync("ScrollEnd", _ChatMessageStack);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex.GetMessages().ToShow());
+            }
+        });
 
-		_HubConnection.On<string>(GameHub.UPDATE_PLAYER_LIST, (jsonPlayersList) =>
-		{
-			if (_Game is not null)
-			{
-				var players = string.IsNullOrWhiteSpace(jsonPlayersList) ? new List<GameHub.Player>() : JsonConvert.DeserializeObject<List<GameHub.Player>>(jsonPlayersList)!;
-				_Game.Players = players;
-				InvokeAsync(StateHasChanged);
-			}
-		});
+        _HubConnection.On<string>(GameHub.ACTION_PLAYER_JOINED, (message) =>
+        {
+            _Messages.Add(new Message("Système", message));
+        });
 
-		_HubConnection.On(GameHub.ACTION_GAME_STARTED, () =>
-		{
-			_InGame = true;
-			InvokeAsync(StateHasChanged);
-		});
+        _HubConnection.On<bool, string, string?>(GameHub.ACTION_CONNECT_RESPOSE, async (success, playerName, jsonGame) =>
+        {
+            if (success)
+            {
+                var game = string.IsNullOrWhiteSpace(jsonGame) ? null : JsonConvert.DeserializeObject<GameHub.Game>(jsonGame!);
 
-		_HubConnection.On<string>(GameHub.UPDATE_PERSONNAGES_LIST, (jsonPersonnagesList) =>
-		{
-			if (_Game is not null)
-			{
-				if (!string.IsNullOrWhiteSpace(jsonPersonnagesList))
-					_Personnages = JsonConvert.DeserializeObject<List<List<Personnage>>>(jsonPersonnagesList)!;
-				InvokeAsync(StateHasChanged);
-			}
-		});
+                _PlayerName = playerName;
+                _Game = game;
+                _InGame = game?.IsStarted ?? false;
+                await InvokeAsync(StateHasChanged);
+            }
+            else
+            {
+                _PlayerName = null;
+                SnackbarService.Add(playerName, Severity.Error);
+                await DialogService.ShowAsync<ServeurCreate>(
+                    "Créé ou rejoindre une partie",
+                    new DialogParameters<ServeurCreate>
+                                                                            {
+                            { x => x.HubConnection, _HubConnection },
+                                                                            },
+                    new DialogOptions
+                        {
+                            CloseButton = false,
+                            MaxWidth = MaxWidth.Medium,
+                            FullWidth = true,
+                            CloseOnEscapeKey = false,
+                            BackdropClick = false
+                        }
+                );
+            }
+        });
+
+        _HubConnection.On<string>(GameHub.ACTION_PLAYER_TOUR, (joueurId) =>
+        {
+            _PlayerTourId = joueurId;
+            InvokeAsync(StateHasChanged);
+        });
+
+        _HubConnection.On<string>(GameHub.UPDATE_PLAYER_LIST, (jsonPlayersList) =>
+        {
+            if (_Game is not null)
+            {
+                var players = string.IsNullOrWhiteSpace(jsonPlayersList) ? new List<GameHub.Player>() : JsonConvert.DeserializeObject<List<GameHub.Player>>(jsonPlayersList)!;
+                _Game.Players = players;
+                InvokeAsync(StateHasChanged);
+            }
+        });
+
+        _HubConnection.On(GameHub.ACTION_GAME_STARTED, () =>
+        {
+            if (_Game is not null)
+                _Game.IsStarted = true;
+            _InGame = true;
+            InvokeAsync(StateHasChanged);
+        });
+
+        _HubConnection.On<string>(GameHub.UPDATE_PERSONNAGES_LIST, (jsonPersonnagesList) =>
+        {
+            if (_Game is not null)
+            {
+                if (!string.IsNullOrWhiteSpace(jsonPersonnagesList))
+                    _Game.Grille = JsonConvert.DeserializeObject<List<List<Personnage>>>(jsonPersonnagesList)!;
+                InvokeAsync(StateHasChanged);
+            }
+        });
 
 
 
-		_HubConnection.On(GameHub.ACTION_GAME_OVER, () =>
-		{
-			_InGame = false;
-			_Personnages = null;
-			InvokeAsync(StateHasChanged);
-		});
+        _HubConnection.On<string>(GameHub.ACTION_GAME_OVER, async (scoresJson) =>
+        {
+            _InGame = false;
+            if (_Game is not null)
+            {
+                _Game.IsStarted = false;
+                _Game.Grille = [];
+            }
 
-		await _HubConnection.StartAsync();
+            List<GameHub.ScoreEntry> scores = string.IsNullOrWhiteSpace(scoresJson) ? [] : JsonConvert.DeserializeObject<List<GameHub.ScoreEntry>>(scoresJson)!;
 
-		if (PlayerKey is null)
-		{
-#if DEBUG
+            await DialogService.ShowAsync<ScoresDialog>(
+            "Fin de la partie",
+            new DialogParameters<ScoresDialog>
+                {
+                    { x => x.Scores, scores },
+                },
+            new DialogOptions
+                {
+                    CloseButton = true,
+                    MaxWidth = MaxWidth.Small,
+                    FullWidth = true
+                });
+
+            await InvokeAsync(StateHasChanged);
+        });
+
+        await _HubConnection.StartAsync();
+
+        if (PlayerKey is null)
+        {
             await DialogService.ShowAsync<ServeurCreate>(
                 "Créé ou rejoindre une partie",
                 new DialogParameters<ServeurCreate>
-                                                            {
-                        { x => x.HubConnection, _HubConnection },
-                                                            },
-                new DialogOptions()
+                                                                                {
+                    { x => x.HubConnection, _HubConnection },
+                                                                                },
+                new DialogOptions
                     {
                         CloseButton = false,
                         MaxWidth = MaxWidth.Medium,
-                        FullWidth = true
+                        FullWidth = true,
+                        CloseOnEscapeKey = false,
+                        BackdropClick = false
                     }
             );
-#endif
-		}
-		else
-		{
-			if (_HubConnection is not null)
-			{
-				await _HubConnection.SendAsync(nameof(GameHub.Connect), PlayerKey);
-			}
-		}
-	}
+        }
+        else
+        {
+            if (_HubConnection is not null)
+            {
+                await _HubConnection.SendAsync(nameof(GameHub.Connect), PlayerKey);
+            }
+        }
+    }
 
-	async Task SendMessage()
-	{
-		if (_HubConnection is not null)
-		{
-			await _HubConnection.SendAsync(nameof(GameHub.SendMessage), _Message);
-			_Message = string.Empty;
-		}
-	}
+    Color GetNameColor(string name)
+    {
+        if (name == "Système")
+            return Color.Warning;
+        else if (name == _PlayerName)
+            return Color.Success;
+        else
+            return Color.Info;
+    }
 
-	async Task StartGame()
-	{
-		if (_HubConnection is not null)
-		{
-			await _HubConnection.SendAsync(nameof(GameHub.StartGame));
-		}
-	}
+    async Task DetectEnter(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter" && !args.ShiftKey && !string.IsNullOrWhiteSpace(_Message))
+        {
+            await SendMessage();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
 
-	public async ValueTask DisposeAsync()
-	{
-		if (_HubConnection is not null)
-		{
-			await _HubConnection.DisposeAsync();
-		}
-	}
+    async Task SendMessage()
+    {
+        if (_HubConnection is not null)
+        {
+            await _HubConnection.SendAsync(nameof(GameHub.SendMessage), _Message);
+            _Message = string.Empty;
+        }
+    }
+
+    async Task StartGame()
+    {
+        if (_HubConnection is not null)
+        {
+            await _HubConnection.SendAsync(nameof(GameHub.StartGame));
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_HubConnection is not null)
+        {
+            await _HubConnection.DisposeAsync();
+        }
+    }
 }

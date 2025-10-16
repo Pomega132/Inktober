@@ -5,6 +5,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <AssemblyVersion>1.16.0.0</AssemblyVersion>
+    <FileVersion>1.16.0.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,7 +16,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="wwwroot\Images\2025\01\" />
     <Folder Include="wwwroot\Images\2025\03\" />
     <Folder Include="wwwroot\Images\2025\06\" />
     <Folder Include="wwwroot\Images\2025\10\" />

@@ -1,5 +1,42 @@
-﻿<h3>Game</h3>
+﻿@using Webtober2025.Client.Models._01
+
+<div class="d-flex flex-column gap-3" style="max-width: 1000px; align-self: center; width: 100%;">
+    @foreach (List<Personnage> ligne in Personnages ?? [])
+    {
+        <div class="d-flex gap-3">
+            @foreach (Personnage personnage in ligne)
+            {
+                <MudButton class="d-flex flex-1 align-items-center" Style="aspect-ratio: 154/129" OnClick="() => Select(personnage)">
+                    <img class="absolute" src="/Images/2025/01/Tete.png" style="height:100%;" />
+                    <img class="absolute" src="/Images/2025/01/@(personnage.Moustache.ToString("000")).png" style="height:100%; filter: hue-rotate(@(personnage.Hue)deg) saturate(@personnage.Saturation) brightness(@(personnage.Lightness * 5));" />
+                    @if (personnage.State == Personnage.E_State.PLAYER_DEAD)
+                    {
+                        <svg class="absolute" viewBox="0 0 6 6" style="height:100%">
+                            <path fill="#30bf30" d="m0 3a1 1 0 006 0A1 1 0 000 3m1 0a1 1 0 014 0A1 1 0 011 3z" />
+                        </svg>
+                    }
+                    else if (personnage.State == Personnage.E_State.BOT_DEAD)
+                    {
+                        <svg class="absolute" viewBox="0 0 6 6" style="height:100%">
+                            <path fill="#bf3030" d="M1 0 3 2 5 0A1 1 0 016 1L4 3 6 5A1 1 0 015 6L3 4 1 6A1 1 0 010 5L2 3 0 1A1 1 0 011 0Z" />
+                        </svg>
+                    }
+                </MudButton>
+            }
+        </div>
+    }
+</div>
 
 @code {
+    [Parameter]
+    public List<List<Personnage>> Personnages { get; set; } = [];
 
+    [Parameter]
+    public HubConnection? HubConnection { get; set; }
+
+    async Task Select(Personnage personnage)
+    {
+        if (HubConnection is not null)
+            await HubConnection.SendAsync(nameof(GameHub.Play), personnage.Id);
+    }
 }

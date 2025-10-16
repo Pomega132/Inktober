@@ -4,6 +4,10 @@
     padding: 0;
 }
 
+.d-grid {
+    display: grid;
+}
+
 /* Empêche la sélection pendant le drag */
 /*[draggable="true"] {
     user-select: none;

@@ -1,7 +1,7 @@
 ﻿/** @type {GameStateInfo} */
-var GameState = GameState || {};
+export var GameState = GameState || {};
 
-window.InitGame = function ()
+export function InitGame()
 {
     GameState = new GameStateInfo();
 }
@@ -11,7 +11,7 @@ window.InitGame = function ()
  * @param {any} player
  * @param {Array<Array<number>>} map
  */
-window.GameRender = function (player, map)
+export function GameRender(player, map)
 {
     GameState.Player = player;
 
@@ -142,9 +142,19 @@ window.GameRender = function (player, map)
     GameState.Context.translate(contextTransform.translateX, contextTransform.translateY);
     GameState.Context.rotate(contextTransform.rotate);
     if (GameState.Player.toLeft)
+    {
         GameState.Context.scale(-1, 1);
+        GameState.Context.translate(-32, 0);
+    }
     GameState.Context.drawImage(GameState.DeerImage, spritePos.x * 32, spritePos.y * 32, 32, 32, -16, -16, 64, 64);
     GameState.Context.restore();
+
+    if (GameState.Player.showHitbox)
+    {
+        GameState.Context.strokeStyle = 'black';
+        GameState.Context.lineWidth = 2;
+        GameState.Context.strokeRect(GameState.Player.x, GameState.Player.y, 64, 64);
+    }
     //context.fillStyle = 'blue';
     //context.fillRect(gameState.player.x, gameState.player.y, gameState.player.width, gameState.player.height);
     //// Draw obstacles
@@ -160,7 +170,7 @@ window.GameRender = function (player, map)
     GameState.LastPlayerState = JSON.parse(JSON.stringify(GameState.Player));
 }
 
-class Terrain
+export class Terrain
 {
     Texture = "/Images/2025/05/tilesetOpenGame.png";
     TileSize = 32;
@@ -177,7 +187,7 @@ class Terrain
     }
 }
 
-class GameStateInfo
+export class GameStateInfo
 {
     Bg = "/Images/2025/05/Forest Pass/bgcolor.png"
     DeerSrc = "/Images/2025/05/deer male calciumtrice.png";

@@ -1,4 +1,4 @@
-@page "/2025/6"
+﻿@page "/2025/6"
 @using Webtober2025.Client.Models
 @using Webtober2025.Client.Models._06
 @using Block = Webtober2025.Client.Models._06.Block
@@ -89,7 +89,7 @@
             </div>
         }
 
-        @if (_Inventaire.Has(E_Item.IRON_INGOT, 0))
+        @if (_Inventaire.Has(E_Item.RAW_IRON, 0))
         {
             <div class="d-flex flex-column gap-5">
                 <div class="d-flex justify-center">
@@ -138,7 +138,7 @@
                             }
                             else if (_Inventaire.Pickaxe.Type == E_Pickaxe.IRON)
                             {
-                                <img src="/Images/2025/06/Gold_Pickaxe.png" style="width:32px; height:32px;" />
+                                <img src="/Images/2025/06/Golden_Pickaxe.png" style="width:32px; height:32px;" />
                             }
                             else if (_Inventaire.Pickaxe.Type == E_Pickaxe.GOLD)
                             {
@@ -156,20 +156,20 @@
     </MudPaper>
 </MudPaper>
 
-<script src="/Scripts/06/GameRender.js" type="module"></script>
-
 @code {
     const int TILE_SIZE = 64;
     const int WIDTH_TILES = 17;
     const int HEIGHT_TILES = 12;
+    const double FRAME_DURATION = 16; // ~60 FPS
 
     ElementReference _Canvas { get; set; }
     IJSObjectReference? _Module { get; set; }
-    System.Timers.Timer _Timer { get; } = new System.Timers.Timer(1000 / 60);
     Map _Map { get; } = new Map(WIDTH_TILES, HEIGHT_TILES);
     MouseState _MouseState { get; } = new MouseState();
     Breaking? _Breaking { get; set; } = null;
     Inventaire _Inventaire { get; set; } = new Inventaire();
+    Task _GameLoopTask { get; set; } = Task.CompletedTask;
+    bool _Looping { get; set; } = true;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -181,10 +181,10 @@
 
             _Module = await JS.InvokeAsync<IJSObjectReference>("import", "/Scripts/06/GameRender.js");
 
-            await _Module.InvokeAsync<object>("InitGame");
+            await _Module.InvokeVoidAsync("InitGame");
             await _Canvas.FocusAsync();
-            _Timer.Elapsed += (s, e) => InvokeAsync(GameLoop);
-            _Timer.Start();
+
+            _GameLoopTask = Task.Run(GameLoop);
         }
 
         await base.OnAfterRenderAsync(firstRender);
@@ -192,35 +192,69 @@
 
     async Task GameLoop()
     {
-        if (_Breaking is not null)
+        while (_Looping)
         {
-            _Breaking.Progress += _Inventaire.Pickaxe.Efficiency;
-            if (_Breaking.Progress >= 10)
+            try
             {
-                E_Block block = _Map[_Breaking.Couche][(int)_Breaking.Position.Y][(int)_Breaking.Position.X];
-                _Inventaire.Add(block.Drop());
+                DateTime start = DateTime.Now;
+
+                if (_Breaking is not null)
+                {
+                    _Breaking.Progress += _Inventaire.Pickaxe.Efficiency;
+                    if (_Breaking.Progress >= 10)
+                    {
+                        E_Block block = _Map[_Breaking.Couche][(int)_Breaking.Position.Y][(int)_Breaking.Position.X];
+                        _Inventaire.Add(block.Drop());
 
 
-                _Map.Break((int)_Breaking.Position.X, (int)_Breaking.Position.Y, _Breaking.Couche);
-                _Breaking = new Breaking(_Breaking.Position, _Map.GetCouche(_Breaking.Position));
-                _Inventaire.PickaxeWornOut();
+                        _Map.Break((int)_Breaking.Position.X, (int)_Breaking.Position.Y, _Breaking.Couche);
+                        _Breaking = new Breaking(_Breaking.Position, _Map.GetCouche(_Breaking.Position));
+                        _Inventaire.PickaxeWornOut();
+                    }
+                }
+
+                if (_Module is not null)
+                    await _Module.InvokeVoidAsync("RenderGame", _Map, _Breaking);
+
+                DateTime end = DateTime.Now;
+
+                if ((end - start).TotalMilliseconds < FRAME_DURATION)
+                    await Task.Delay((int)(FRAME_DURATION - (end - start).TotalMilliseconds));
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex.GetMessages().ToShow());
             }
         }
-
-        if(_Module is not null)
-            await _Module.InvokeAsync<object>("RenderGame", _Map, _Breaking);
     }
 
     public async ValueTask DisposeAsync()
     {
-        _Timer.Stop();
-        _Timer.Dispose();
+        if (_GameLoopTask is not null)
+        {
+            try
+            {
+                _Looping = false;
+                await _GameLoopTask;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex.GetMessages().ToShow());
+            }
+        }
 
         if (_Module is not null)
         {
-            //await _Module.InvokeVoidAsync("DisposeGame");
-            await _Module.DisposeAsync();
-		}
+            try
+            {
+                //await _Module.InvokeVoidAsync("DisposeGame");
+                await _Module.DisposeAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex.GetMessages().ToShow());
+            }
+        }
 
         await Task.CompletedTask;
     }
@@ -349,7 +383,7 @@
     {
         public bool IsDown { get; set; } = false;
         public Point Position { get; set; } = new Point(0, 0);
-        public Point BlockPosition => new Point( (int)(Position.X / TILE_SIZE), (int)(Position.Y / TILE_SIZE));
+        public Point BlockPosition => new Point((int)(Position.X / TILE_SIZE), (int)(Position.Y / TILE_SIZE));
 
     }
 
@@ -361,5 +395,5 @@
         public int Couche { get; set; } = couche;
     }
 
-    
+
 }

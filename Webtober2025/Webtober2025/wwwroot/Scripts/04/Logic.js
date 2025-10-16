@@ -1,4 +1,4 @@
-export function LoadCam() {
+﻿export function LoadCam() {
     var buffer = [];
     var BUFFER_SIZE = 25;
 
@@ -77,8 +77,8 @@ export function LoadCam() {
 export function DisposeCam() {
     var video = document.getElementById('video');
     var stream = video.srcObject;
-    var tracks = stream.getTracks();
-    tracks.forEach(function (track) {
+    var tracks = stream?.getTracks();
+    tracks?.forEach(function (track) {
         track.stop();
     });
     video.srcObject = null;
