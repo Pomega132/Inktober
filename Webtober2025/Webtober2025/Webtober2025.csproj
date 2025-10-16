@@ -18,6 +18,7 @@
     <Folder Include="wwwroot\Images\2025\03\" />
     <Folder Include="wwwroot\Images\2025\06\" />
     <Folder Include="wwwroot\Images\2025\10\" />
+    <Folder Include="wwwroot\Images\2025\11\" />
   </ItemGroup>
 
   <ItemGroup>
