@@ -1,7 +1,97 @@
-@page "/2025/14"
+﻿@page "/2025/14"
+@using Webtober2025.Client.Models
+
+@implements IAsyncDisposable
+@implements IKeyState
+
+@inject IJSRuntime JS
 
 <h3>14 - Tronc</h3>
 
-@code {
+<MudPaper Class="flex-1 d-flex justify-space-around">
+    <div>
+        <canvas @ref="_Canvas" id="game" class="border" tabindex="0" width="1000" height="800" @onkeydown="((IKeyState)this).AddKeyPress" @onkeyup="((IKeyState)this).RemoveKeyPress"></canvas>
+    </div>
+</MudPaper>
 
+@code {
+    public List<IKeyState.E_Controle> KeysPressed { get; } = new List<IKeyState.E_Controle>();
+    public IKeyState.KeyControles Controles { get; } = new IKeyState.KeyControles()
+    {
+        new IKeyState.KeyControle() { C = IKeyState.E_Controle.LEFT, KeysBinding = new List<string> { "ArrowLeft", "KeyA" } },
+        new IKeyState.KeyControle() { C = IKeyState.E_Controle.RIGHT, KeysBinding = new List<string> { "ArrowRight", "KeyD" } },
+        new IKeyState.KeyControle() { C = IKeyState.E_Controle.UP, KeysBinding = new List<string> { "ArrowUp", "KeyW" } },
+        new IKeyState.KeyControle() { C = IKeyState.E_Controle.DOWN, KeysBinding = new List<string> { "ArrowDown", "KeyS" } },
+    };
+
+    ElementReference _Canvas { get; set; }
+    IJSObjectReference? _Module { get; set; }
+    Task _GameLoopTask { get; set; } = Task.CompletedTask;
+    bool _GameStrated { get; set; } = true;
+    bool _Looping { get; set; } = true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _Module ??= await JS.InvokeAsync<IJSObjectReference>("import", "/Scripts/10/GameRender.js");
+
+            await _Module.InvokeVoidAsync("InitGame");
+
+            _GameLoopTask = Task.Run(GameLoop);
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    async void GameLoop()
+    {
+        while (_Looping)
+        {
+            try
+            {
+                if (_GameStrated)
+                {
+
+                    DateTime start = DateTime.Now;
+
+
+
+                    if (_Module is not null)
+                        await _Module.InvokeVoidAsync("RenderGame");
+
+                    DateTime end = DateTime.Now;
+
+                    int frameTime = (int)(end - start).TotalMilliseconds;
+                    if (frameTime < 16)
+                        await Task.Delay(16 - frameTime);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex.GetMessages().ToShow());
+            }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            _Looping = false;
+            await _GameLoopTask;
+        }
+        catch { }
+
+        if (_Module is not null)
+        {
+            try
+            {
+                await _Module.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+    }
 }
