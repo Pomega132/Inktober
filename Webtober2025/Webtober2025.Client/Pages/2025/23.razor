@@ -1,7 +1,471 @@
-@page "/2025/23"
+﻿@page "/2025/23"
+@using Webtober2025.Client.Models
+
+@implements IAsyncDisposable
+
+@inject IJSRuntime _JS
+@inject IDialogService DialogService
+
 
 <h3>23 - Luciole</h3>
 
-@code {
+<div class="d-flex justify-space-around">
+    <canvas @ref="_Canvas" id="game" class="border" tabindex="0" width="1000" height="800" @onkeydown="KeyDown" @onmousemove="MouseMove"></canvas>
+    @* <MudPaper>
+        <MudText Typo="Typo.h6">Appuyez sur "D" pour afficher les points pour débuguer</MudText>
+        @foreach (var point in _WallsPoints)
+        {
+            <MudText Typo="Typo.body2">@($"{point.X:0.##}") @($"{point.Y:0.##}")</MudText>
+        }
+    </MudPaper> *@
+</div>
 
+@code {
+    const double CELL_SIZE = 50;
+
+    ElementReference _Canvas { get; set; }
+    IJSObjectReference? _Module { get; set; }
+    MouseState _MouseState { get; set; } = new MouseState();
+    Labirynth _Labirynth { get; set; } = new Labirynth();
+    List<Point> _WallsPoints { get; set; } = [];
+    Cell? _LastCell { get; set; } = null;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+        _Module = await _JS.InvokeAsync<IJSObjectReference>("import", "/Scripts/23/GameRender.js");
+        await _Module.InvokeVoidAsync("InitGame");
+        await _Labirynth.Init(1000, 800, _Module);
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    async Task MouseMove(MouseEventArgs args)
+    {
+        _MouseState.Position.X = args.OffsetX;
+        if (_MouseState.Position.X > 999)
+            _MouseState.Position.X = 999;
+        _MouseState.Position.Y = args.OffsetY;
+        if (_MouseState.Position.Y > 799)
+            _MouseState.Position.Y = 799;
+
+        // Récupérer la cellule actuelle
+        int xIndex = (int)(_MouseState.Position.X / CELL_SIZE);
+        int yIndex = (int)(_MouseState.Position.Y / CELL_SIZE);
+        Cell currentCell = _Labirynth.Grid[xIndex, yIndex];
+
+        if (_LastCell is not null) // Détécter si le joueur à herter un mur
+        {
+
+            if (currentCell != _LastCell) // Le joueur à changé de cellule
+            {
+                // Vérifier si le mouvement est valide
+                if (!_LastCell.IsAccessibleCells(currentCell))
+                {
+                    // Le joueur à herter un mur
+                    var dialog = await DialogService.ShowMessageBox("Game Over", "Vous avez heurté un mur !", "Recommencer");
+                    _LastCell = null;
+                    return;
+                }
+            }
+        }
+
+        _LastCell = currentCell;
+
+        if (_Labirynth is null || _Module is null)
+            return;
+
+        var wallsPoints = _Labirynth.GetPoints(_MouseState.Position);
+
+        try
+        {
+            await _Module.InvokeVoidAsync("RenderGame", _MouseState.Position, wallsPoints);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    async Task KeyDown(KeyboardEventArgs args)
+    {
+        if (args.Code == "KeyD")
+        {
+            _WallsPoints = _Labirynth.GetPoints(_MouseState.Position);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_Module is not null)
+        {
+            try
+            {
+                await _Module.DisposeAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex.GetMessages().ToShow());
+            }
+        }
+
+        await ValueTask.CompletedTask;
+    }
+
+    class Labirynth
+    {
+        public List<Point> Walls { get; set; } = [];
+        public Cell[,] Grid { get; set; }
+
+        public async Task Init(int width, int height, IJSObjectReference? module)
+        {
+            int cols = width / (int)CELL_SIZE;
+            int rows = height / (int)CELL_SIZE;
+            Grid = new Cell[cols, rows];
+            for (int x = 0; x < cols; x++)
+            {
+                for (int y = 0; y < rows; y++)
+                {
+                    Grid[x, y] = new Cell(x + y * cols, new(x, y));
+                }
+            }
+            // Maze generation logic would go here
+
+            try
+            {
+                while (!GenEnd())
+                {
+                    List<Cell> cells = Grid.Cast<Cell>().Where(c => c.Id != 0 && c.AnyWall(Grid)).ToList();
+                    Cell cell = cells[new Random().Next(cells.Count)];
+
+                    // Détécter les voisins disponibles
+                    List<(Cell, int)> neighbors = [];
+                    // Top
+                    if (cell.Walls[0] && cell.Coordinates.Y > 0)
+                    {
+                        Cell neighbor = Grid[(int)cell.Coordinates.X, (int)cell.Coordinates.Y - 1];
+                        if (neighbor.Id != cell.Id)
+                            neighbors.Add((neighbor, 0));
+                    }
+                    // Right
+                    if (cell.Walls[1] && cell.Coordinates.X < cols - 1)
+                    {
+                        Cell neighbor = Grid[(int)cell.Coordinates.X + 1, (int)cell.Coordinates.Y];
+                        if (neighbor.Id != cell.Id)
+                            neighbors.Add((neighbor, 1));
+                    }
+                    // Bottom
+                    if (cell.Walls[2] && cell.Coordinates.Y < rows - 1)
+                    {
+                        Cell neighbor = Grid[(int)cell.Coordinates.X, (int)cell.Coordinates.Y + 1];
+                        if (neighbor.Id != cell.Id)
+                            neighbors.Add((neighbor, 2));
+                    }
+                    // Left
+                    if (cell.Walls[3] && cell.Coordinates.X > 0)
+                    {
+                        Cell neighbor = Grid[(int)cell.Coordinates.X - 1, (int)cell.Coordinates.Y];
+                        if (neighbor.Id != cell.Id)
+                            neighbors.Add((neighbor, 3));
+                    }
+
+                    if (neighbors.Count == 0)
+                        continue;
+
+                    (Cell? chosenNeighbor, int direction) = neighbors[new Random().Next(neighbors.Count)];
+                    // Supprimer les murs entre les cellules
+                    cell.Walls[direction] = false;
+                    chosenNeighbor.Walls[(direction + 2) % 4] = false;
+
+                    // Fusionner les cellules
+                    int minId = Math.Min(cell.Id, chosenNeighbor.Id);
+                    int maxId = Math.Max(cell.Id, chosenNeighbor.Id);
+                    List<Cell> oldCells = Grid.Cast<Cell>().Where(c => c.Id == maxId).ToList();
+                    foreach (Cell oldCell in oldCells)
+                    {
+                        oldCell.Id = minId;
+                    }
+
+                    if (module is not null)
+                    {
+                        string gridJson = JsonConvert.SerializeObject(Grid);
+                        await module.InvokeVoidAsync("ShowLabirinthe", gridJson);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                if (module is not null)
+                {
+                    string gridJson = JsonConvert.SerializeObject(Grid);
+                    await module.InvokeVoidAsync("ShowLabirinthe", gridJson);
+                }
+            }
+        }
+
+        public List<Point> GetPoints(Point mousePoint)
+        {
+            // Détécter la cellule dans laquelle se trouve la souris
+            int xIndex = (int)(mousePoint.X / CELL_SIZE);
+            int yIndex = (int)(mousePoint.Y / CELL_SIZE);
+            Cell cell = Grid[xIndex, yIndex];
+
+            List<Point> points = [];
+
+            for (int i = 0; i < 4; i++)
+            {
+                Point corner = cell.GetCorners(i);
+                points.Add(corner * CELL_SIZE);
+
+                // Gérer la lumuère vers la direction
+                if (!cell.Walls[i])
+                {
+                    // Direction d'origine
+                    int originDirection1 = (i + 2) % 4;
+                    // Cellule voisine
+                    Point voisin1Position = cell.GetVoisin(i);
+                    Cell cell1 = Grid[(int)voisin1Position.X, (int)voisin1Position.Y];
+
+                    // Parcourir les murs de la Cellule voisine dans le sens des aiguilles d'une montre
+                    for (int wallIndex = (originDirection1 + 1) % 4; wallIndex != originDirection1; wallIndex = (wallIndex + 1) % 4)
+                    {
+                        // Tester son mur
+                        if (cell1.Walls[wallIndex])
+                        {
+                            // Longer le mur
+                            points.Add(cell1.GetCorners((wallIndex + 1) % 4) * CELL_SIZE);
+                        }
+                        else
+                        {
+                            int originDirection2 = (wallIndex + 2) % 4;
+                            // Répéter la cellule voisine encore une fois
+                            Point voisin2Position = cell1.GetVoisin(wallIndex);
+                            Cell cell2 = Grid[(int)voisin2Position.X, (int)voisin2Position.Y];
+                            // Calculer les angles de la souris par rapport aux coins de sa cellule et de la souris par rapport aux centre de la cellule voisine 2.
+                            int wallIndex2 = (originDirection2 + 1) % 4;
+
+                            if (originDirection1 == originDirection2) // La céllule est juste en face, on peut voir tous les murs
+                            {
+                                for (wallIndex2 = (originDirection2 + 1) % 4; wallIndex2 != originDirection2; wallIndex2 = (wallIndex2 + 1) % 4)
+                                {
+                                    points.Add(cell2.GetCorners(wallIndex2) * CELL_SIZE);
+                                }
+                                points.Add(cell2.GetCorners(originDirection2) * CELL_SIZE);
+                            }
+                            else
+                            {
+                                double angleToCenter = Math.Atan2((cell2.Coordinates.Y + 0.5) * CELL_SIZE - mousePoint.Y, (cell2.Coordinates.X + 0.5) * CELL_SIZE - mousePoint.X);
+
+                                if (originDirection2 == (i + 1) % 4) // Même coin que la cellule d'origine
+                                {
+                                    double angleToCorner = Math.Atan2(corner.Y * CELL_SIZE - mousePoint.Y, corner.X * CELL_SIZE - mousePoint.X);
+                                    bool addVisibleCorner = false;
+
+                                    if (Math.Abs(angleToCorner) > Math.Abs(angleToCenter)) // On voit le mur d'en face
+                                    {
+                                        wallIndex2 = (originDirection2 + 2) % 4;
+                                        addVisibleCorner = true;
+                                    }
+                                    else
+                                        wallIndex2 = (originDirection2 + 3) % 4;
+
+                                    Point cornerHidden = cell2.GetCorners(wallIndex2);
+
+                                    if (wallIndex2 % 2 == 0) // Mur horizontal
+                                    {
+                                        // Calculer l'intersection entre la ligne souris-corner et le mur
+                                        double m1 = (corner.Y * CELL_SIZE - mousePoint.Y) / (corner.X * CELL_SIZE - mousePoint.X);
+                                        double b1 = mousePoint.Y - m1 * mousePoint.X;
+                                        double yIntersect = cornerHidden.Y * CELL_SIZE;
+                                        double xIntersect = (yIntersect - b1) / m1;
+                                        if (!double.IsNaN(xIntersect))
+                                            points.Add(new Point(xIntersect / CELL_SIZE, cornerHidden.Y) * CELL_SIZE);
+                                    }
+                                    else // Mur vertical
+                                    {
+                                        // Calculer l'intersection entre la ligne souris-corner et le mur
+                                        double m1 = (corner.Y * CELL_SIZE - mousePoint.Y) / (corner.X * CELL_SIZE - mousePoint.X);
+                                        double b1 = mousePoint.Y - m1 * mousePoint.X;
+                                        double xIntersect = cornerHidden.X * CELL_SIZE;
+                                        double yIntersect = m1 * xIntersect + b1;
+                                        if (!double.IsNaN(yIntersect))
+                                            points.Add(new Point(cornerHidden.X, yIntersect / CELL_SIZE) * CELL_SIZE);
+                                    }
+
+                                    if (addVisibleCorner) // Ajouter le coin visible
+                                        points.Add(cell2.GetCorners((wallIndex2 + 1) % 4) * CELL_SIZE);
+                                }
+                                else // Coin opposé
+                                {
+                                    Point corner2 = cell.GetCorners((i + 1) % 4);
+                                    double angleToCorner = Math.Atan2(corner2.Y * CELL_SIZE - mousePoint.Y, corner2.X * CELL_SIZE - mousePoint.X);
+                                    Point cornerVisible;
+
+                                    if (Math.Abs(angleToCorner) > Math.Abs(angleToCenter)) // On voit le mur d'en face
+                                    {
+                                        wallIndex2 = (originDirection2 + 2) % 4;
+                                        cornerVisible = cell2.GetCorners(wallIndex2);
+                                        points.Add(cornerVisible * CELL_SIZE);
+                                    }
+                                    else
+                                    {
+                                        wallIndex2 = (originDirection2 + 1) % 4;
+                                        cornerVisible = cell2.GetCorners(wallIndex2);
+                                    }
+
+                                    if (wallIndex2 % 2 == 0) // Mur horizontal
+                                    {
+                                        // Calculer l'intersection entre la ligne souris-corner et le mur
+                                        double m1 = (corner2.Y * CELL_SIZE - mousePoint.Y) / (corner2.X * CELL_SIZE - mousePoint.X);
+                                        double b1 = mousePoint.Y - m1 * mousePoint.X;
+                                        double yIntersect = cornerVisible.Y * CELL_SIZE;
+                                        double xIntersect = (yIntersect - b1) / m1;
+                                        if (!double.IsNaN(xIntersect))
+                                            points.Add(new Point(xIntersect / CELL_SIZE, cornerVisible.Y) * CELL_SIZE);
+                                    }
+                                    else // Mur vertical
+                                    {
+                                        // Calculer l'intersection entre la ligne souris-corner et le mur
+                                        double m1 = (corner2.Y * CELL_SIZE - mousePoint.Y) / (corner2.X * CELL_SIZE - mousePoint.X);
+                                        double b1 = mousePoint.Y - m1 * mousePoint.X;
+                                        double xIntersect = cornerVisible.X * CELL_SIZE;
+                                        double yIntersect = m1 * xIntersect + b1;
+                                        if (!double.IsNaN(yIntersect))
+                                            points.Add(new Point(cornerVisible.X, yIntersect / CELL_SIZE) * CELL_SIZE);
+                                    }
+                                }
+
+                            }
+                        }
+                    }
+
+                }
+            }
+
+            return points;
+        }
+
+        List<Cell> GetAccessibleCells(Cell cell)
+        {
+            List<Cell> accessibleCells = [];
+            // Top
+            if (!cell.Walls[0] && cell.Coordinates.Y > 0)
+            {
+                int xIndex = (int)cell.Coordinates.X;
+                int yIndex = (int)cell.Coordinates.Y - 1;
+                accessibleCells.Add(Grid[xIndex, yIndex]);
+            }
+            // Right
+            if (!cell.Walls[1] && cell.Coordinates.X < Grid.GetLength(0) - 1)
+            {
+                int xIndex = (int)cell.Coordinates.X + 1;
+                int yIndex = (int)cell.Coordinates.Y;
+                accessibleCells.Add(Grid[xIndex, yIndex]);
+            }
+            // Bottom
+            if (!cell.Walls[2] && cell.Coordinates.Y < Grid.GetLength(1) - 1)
+            {
+                int xIndex = (int)cell.Coordinates.X;
+                int yIndex = (int)cell.Coordinates.Y + 1;
+                accessibleCells.Add(Grid[xIndex, yIndex]);
+            }
+            // Left
+            if (!cell.Walls[3] && cell.Coordinates.X > 0)
+            {
+                int xIndex = (int)cell.Coordinates.X - 1;
+                int yIndex = (int)cell.Coordinates.Y;
+                accessibleCells.Add(Grid[xIndex, yIndex]);
+            }
+
+            return accessibleCells;
+        }
+
+        bool GenEnd()
+        {
+            foreach (Cell cell in Grid)
+            {
+                if (cell.Id != 0)
+                    return false;
+            }
+
+            return true;
+        }
+    }
+
+    class Cell(int id, Point coordinates)
+    {
+        public int Id { get; set; } = id;
+        public Point Coordinates { get; } = coordinates;
+        public bool Visited { get; set; } = false;
+        public bool[] Walls { get; set; } = [true, true, true, true]; // Top, Right, Bottom, Left
+
+        public Point GetCorners(int direction)
+        {
+            switch (direction % 4)
+            {
+                default:
+                case 0:
+                    return new(Coordinates.X, Coordinates.Y);         // 0 : haut-gauche
+                case 1:
+                    return new(Coordinates.X + 1, Coordinates.Y);     // 1 : haut-droite
+                case 2:
+                    return new(Coordinates.X + 1, Coordinates.Y + 1); // 2 : bas-droite
+                case 3:
+                    return new(Coordinates.X, Coordinates.Y + 1);     // 3 : bas-gauche
+            }
+        }
+
+        public Point GetVoisin(int direction)
+        {
+            switch (direction % 4)
+            {
+                default:
+                case 0:
+                    return new(Coordinates.X, Coordinates.Y - 1);     // 0 : haut
+                case 1:
+                    return new(Coordinates.X + 1, Coordinates.Y);     // 1 : droite
+                case 2:
+                    return new(Coordinates.X, Coordinates.Y + 1);     // 2 : bas
+                case 3:
+                    return new(Coordinates.X - 1, Coordinates.Y);     // 3 : gauche
+            }
+        }
+
+        public bool IsAccessibleCells(Cell other)
+        {
+            // Top
+            if (Coordinates.Y > 0 && !Walls[0] && other.Coordinates.X == Coordinates.X && other.Coordinates.Y == Coordinates.Y - 1)
+                return true;
+            // Right
+            if (Coordinates.X < (1000 / CELL_SIZE) - 1 && !Walls[1] && other.Coordinates.X == Coordinates.X + 1 && other.Coordinates.Y == Coordinates.Y)
+                return true;
+            // Bottom
+            if (Coordinates.Y < (800 / CELL_SIZE) - 1 && !Walls[2] && other.Coordinates.X == Coordinates.X && other.Coordinates.Y == Coordinates.Y + 1)
+                return true;
+            // Left
+            if (Coordinates.X > 0 && !Walls[3] && other.Coordinates.X == Coordinates.X - 1 && other.Coordinates.Y == Coordinates.Y)
+                return true;
+
+            return false;
+        }
+
+        public bool AnyWall(Cell[,] cells)
+        {
+            // Top
+            if (Coordinates.Y > 0 && Walls[0] && cells[(int)Coordinates.X, (int)Coordinates.Y - 1].Id != Id)
+                return true;
+            // Right
+            if (Coordinates.X < (1000 / CELL_SIZE) - 1 && Walls[1] && cells[(int)Coordinates.X + 1, (int)Coordinates.Y].Id != Id)
+                return true;
+            // Bottom
+            if (Coordinates.Y < (800 / CELL_SIZE) - 1 && Walls[2] && cells[(int)Coordinates.X, (int)Coordinates.Y + 1].Id != Id)
+                return true;
+            // Left
+            if (Coordinates.X > 0 && Walls[3] && cells[(int)Coordinates.X - 1, (int)Coordinates.Y].Id != Id)
+                return true;
+
+            return false;
+        }
+    }
 }
