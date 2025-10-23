@@ -4,6 +4,27 @@
     padding: 0;
 }
 
+.animated-025 {
+    -moz-transition: .25s !important;
+    -o-transition: .25s !important;
+    -webkit-transition: .25s !important;
+    transition: .25s !important;
+}
+
+.animated-05 {
+    -moz-transition: .5s !important;
+    -o-transition: .5s !important;
+    -webkit-transition: .5s !important;
+    transition: .5s !important;
+}
+
+.animated-1 {
+    -moz-transition: 1s !important;
+    -o-transition: 1s !important;
+    -webkit-transition: 1s !important;
+    transition: 1s !important;
+}
+
 .d-grid {
     display: grid;
 }

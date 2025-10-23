@@ -1,7 +1,200 @@
-@page "/2025/22"
+﻿@page "/2025/22"
+@using Webtober2025.Client.Models
+
+@inject IJSRuntime _JS
 
 <h3>22 - Bouton</h3>
 
-@code {
+<MudPaper id="Zone" Class="flex-1 relative" @onmousemove="ChangeMousePosition">
+    @foreach (var button in _Buttons)
+    {
+        <MudButton Class="@($"absolute {(_Anim ? "animated-025" : "")}")" Variant="Variant.Filled" Color="button.Color" OnClick="button.InvokeClick"
+                   Style="@($"width: 200px; height: 100px; top: {button.Area.Position.Y - button.Area.Size.Y / 2}px; left: {button.Area.Position.X - button.Area.Size.X / 2}px")">
+            @button.Message
+        </MudButton>
+    }
+</MudPaper>
 
+@code {
+    IJSObjectReference? _Module { get; set; }
+    Point _MousePosition = new Point(0, 0);
+    List<CustomeButtonInfos> _Buttons = [];
+    Rect _Zone = new Rect(new Point(0, 0), new Point(0, 0));
+    bool _Anim = true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        _Module = await _JS.InvokeAsync<IJSObjectReference>("import", "/Scripts/22/Tools.js");
+        _Zone.Position = await _Module.InvokeAsync<Point?>("GetPosition", "Zone") ?? new(0, 0);
+        _Zone.Size = await _Module.InvokeAsync<Point?>("GetSize", "Zone") ?? new(0, 0);
+        CustomeButtonInfos jimmy = new(new Point(_Zone.Size.X / 2, _Zone.Size.Y / 2));
+        jimmy.OnClick += Click;
+        _Buttons.Add(jimmy);
+
+        await InvokeAsync(StateHasChanged);
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+
+    async Task ChangeMousePosition(MouseEventArgs args)
+    {
+        _MousePosition = new Point(args.ClientX - _Zone.Position.X, args.ClientY - _Zone.Position.Y);
+
+        if (_Module is null)
+            return;
+
+        _Buttons.ForEach(b => b.UpdatePosition(_MousePosition, _Zone, _Buttons));
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Click(CustomeButtonInfos button)
+    {
+        _Anim = false;
+        _Buttons.Remove(button);
+
+        var points = _Buttons.Select(b => b.Origin);
+
+        // Générer deux nouveaux boutons à des endroits non occupé.
+        for (int i = 0; i < 2; i++)
+        {
+            Point newOrigin;
+            int tentatives = 100; // Limiter le nombre de tentatives pour éviter une boucle infinie.
+            do
+            {
+                newOrigin = new Point(
+                    RNG.Next((int)(button.Area.Size.X / 2) + 1, (int)(_Zone.Size.X - button.Area.Size.X / 2) - 1),
+                    RNG.Next((int)(button.Area.Size.Y / 2) + 1, (int)(_Zone.Size.Y - button.Area.Size.Y / 2) - 1)
+                );
+
+                tentatives--;
+                if (tentatives <= 0)
+                    break; // Sortir si trop de tentatives.
+            } while (points.Any(p => p.GetDistance(newOrigin) < button.ProximityDistance()));
+            if (tentatives <= 0)
+                break;
+            CustomeButtonInfos newButton = new(newOrigin);
+            newButton.OnClick += Click;
+            _Buttons.Add(newButton);
+        }
+
+        await InvokeAsync(StateHasChanged);
+
+        // Relancer l'animation après un court instant.
+        await Task.Delay(50);
+        _Anim = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    class CustomeButtonInfos(Point origin)
+    {
+        private Guid _Id { get; } = Guid.NewGuid();
+
+        public Point Origin { get; } = origin;
+
+        public Rect Area { get; set; } = new(origin, new(200, 100));
+        public string Message { get; set; } = "N'appuie pas sur moi !";
+        public Color Color { get; set; } = Color.Success;
+
+        public double Top => Area.Position.Y - Area.Size.Y / 2;
+        public double Left => Area.Position.X - Area.Size.X / 2;
+
+        public event Func<CustomeButtonInfos, Task>? OnClick;
+
+        public async Task InvokeClick()
+        {
+            if (OnClick is not null)
+                await OnClick.Invoke(this);
+        }
+
+        public void UpdatePosition(Point mousePosition, Rect zone, List<CustomeButtonInfos> buttons)
+        {
+            double distance = GetDistanceTo(mousePosition);
+
+            if (distance < ProximityDistance()) // Éloigner le bouton de la souris.
+            {
+                double angle = Math.Atan2(mousePosition.Y - Area.Position.Y,
+                                          mousePosition.X - Area.Position.X);
+                double moveDistance = ProximityDistance() - distance; // Plus on est proche, plus on bouge loin.
+                double newX = Area.Position.X - Math.Cos(angle) * moveDistance;
+                double newY = Area.Position.Y - Math.Sin(angle) * moveDistance;
+                // S'assurer que le bouton reste dans la zone.
+                newX = Math.Clamp(newX, Area.Size.X / 2 + 1, zone.Size.X - Area.Size.X / 2 - 1);
+                newY = Math.Clamp(newY, Area.Size.Y / 2 + 1, zone.Size.Y - Area.Size.Y / 2 - 1);
+
+                // Vérifier les collisions avec les autres boutons
+                var tempRect = new Rect(new Point(newX, newY), Area.Size);
+                bool collision = buttons.Any(b => b._Id != _Id && tempRect.IsColliding(b.Area));
+                if (!collision)
+                {
+                    Area.Position = new Point(newX, newY);
+                }
+                // Sinon, ne pas bouger (ou on pourrait essayer de trouver une autre position, mais simple ici)
+            }
+
+            // Si la souris est loin, essaier de retourner à son origin
+            if (Area.Position != Origin && distance > ProximityDistance() * 1.5)
+            {
+                // Retour au centre
+                double angleToCenter = Math.Atan2(Origin.Y - Area.Position.Y,
+                                                  Origin.X - Area.Position.X);
+
+                Point lastPosition = Area.Position;
+
+                do
+                {
+                    Point nextPosition = new Point(
+                            lastPosition.X + Math.Cos(angleToCenter) * 10,
+                            lastPosition.Y + Math.Sin(angleToCenter) * 10
+                        );
+
+                    if (lastPosition.GetDistance(Origin) < lastPosition.GetDistance(nextPosition))
+                        nextPosition = Origin; // Ne pas dépasser le centre.
+
+                    if (nextPosition.GetDistance(mousePosition) < ProximityDistance())
+                        break; // Ne pas s'approcher de la souris.
+
+                    // Vérifier collision avec les autres boutons
+                    var tempRect = new Rect(nextPosition, Area.Size);
+                    bool collision = buttons.Any(b => !ReferenceEquals(b, this) && tempRect.IsColliding(b.Area));
+                    if (collision)
+                        break; // Arrêter si collision
+
+                    lastPosition = nextPosition;
+                } while (lastPosition != Origin);
+
+                Area.Position = lastPosition;
+            }
+
+            // Texte du bouton en fonction de la distance
+            if (distance < ProximityDistance() * .5)
+            {
+                Message = "Non ! Pitié !";
+                Color = Color.Error;
+            }
+            else if (distance < ProximityDistance())
+            {
+                Message = "Reculer ! Ne me clique pas dessus !";
+                Color = Color.Warning;
+            }
+            else if (distance < ProximityDistance() * 1.5)
+            {
+                Message = "Trop proche !";
+                Color = Color.Info;
+            }
+            else
+            {
+                Message = "N'appuie pas sur moi !";
+                Color = Color.Success;
+            }
+        }
+
+        public double ProximityDistance() => double.Hypot(Area.Size.X, Area.Size.Y) * 1.1;
+
+        public double GetDistanceTo(Point p) => Area.Position.GetDistance(p);
+    }
 }
