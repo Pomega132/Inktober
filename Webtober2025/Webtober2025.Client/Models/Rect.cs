@@ -1,4 +1,4 @@
-namespace Webtober2025.Client.Models
+﻿namespace Webtober2025.Client.Models
 {
     public class Rect
     {
@@ -13,7 +13,7 @@ namespace Webtober2025.Client.Models
             Size = size;
         }
 
-        public Rect(int x, int y, int width, int height)
+        public Rect(double x, double y, double width, double height)
         {
             Position = new Point(x, y);
             Size = new Point(width, height);
@@ -25,6 +25,14 @@ namespace Webtober2025.Client.Models
                      Position.X + Size.X < other.Position.X ||
                      Position.Y > other.Position.Y + other.Size.Y ||
                      Position.Y + Size.Y < other.Position.Y);
+        }
+
+        public bool IsColliding(Point point)
+        {
+            return (point.X >= Position.X &&
+                    point.X <= Position.X + Size.X &&
+                    point.Y >= Position.Y &&
+                    point.Y <= Position.Y + Size.Y);
         }
     }
 }

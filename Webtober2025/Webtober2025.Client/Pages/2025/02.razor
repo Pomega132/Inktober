@@ -1,4 +1,4 @@
-@page "/2025/2"
+﻿@page "/2025/2"
 @using System.Text
 
 @implements IAsyncDisposable
@@ -140,7 +140,7 @@
     {
         if( firstRender)
         {
-            _Module ??= await JS.InvokeAsync<IJSObjectReference>("import", "/Scripts/2025/02/Logic.js");
+            _Module ??= await JS.InvokeAsync<IJSObjectReference>("import", "/Scripts/02/Logic.js");
 		}
 
         await base.OnAfterRenderAsync(firstRender);

@@ -1,16 +1,26 @@
 ﻿@page "/2025/14"
+@using System.Text
 @using Webtober2025.Client.Models
 
 @implements IAsyncDisposable
 @implements IKeyState
 
 @inject IJSRuntime JS
+@inject IDialogService DialogService
 
-<h3>14 - Tronc</h3>
+<div class="d-flex justify-space-between">
+    <h3>14 - Tronc</h3>
+
+    <div class="d-flex gap-5">
+        <MudText Typo="Typo.h6">Temps : @($"{DateTime.Now - _GameStart:mm\\:ss}")</MudText>
+        <MudText Typo="Typo.h6">Nombre de boucles : @_LoopCount</MudText>
+    </div>
+</div>
+
 
 <MudPaper Class="flex-1 d-flex justify-space-around">
     <div>
-        <canvas @ref="_Canvas" id="game" class="border" tabindex="0" width="1000" height="800" @onkeydown="((IKeyState)this).AddKeyPress" @onkeyup="((IKeyState)this).RemoveKeyPress"></canvas>
+        <canvas @ref="_Canvas" id="game" class="border" tabindex="0" width="1000" height="798" @onkeydown="((IKeyState)this).AddKeyPress" @onkeyup="((IKeyState)this).RemoveKeyPress"></canvas>
     </div>
 </MudPaper>
 
@@ -23,25 +33,58 @@
         new IKeyState.KeyControle() { C = IKeyState.E_Controle.UP, KeysBinding = new List<string> { "ArrowUp", "KeyW" } },
         new IKeyState.KeyControle() { C = IKeyState.E_Controle.DOWN, KeysBinding = new List<string> { "ArrowDown", "KeyS" } },
     };
+    const int NB_WATER_LINES = 17;
+    const int LINE_HEIGHT = 38;
+    const double BUCHE_HEIGHT = 30;
 
     ElementReference _Canvas { get; set; }
     IJSObjectReference? _Module { get; set; }
     Task _GameLoopTask { get; set; } = Task.CompletedTask;
     bool _GameStrated { get; set; } = true;
     bool _Looping { get; set; } = true;
+    Player _Player { get; set; } = new Player(500, 779);
+    List<Tronc> _Troncs { get; } = new List<Tronc>();
+    DateTime _GameStart { get; set; } = DateTime.Now;
+    int _LoopCount { get; set; } = 0;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        GameInit();
+
+        await base.OnInitializedAsync();
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            _Module ??= await JS.InvokeAsync<IJSObjectReference>("import", "/Scripts/10/GameRender.js");
+            _Module ??= await JS.InvokeAsync<IJSObjectReference>("import", "/Scripts/14/GameRender.js");
 
             await _Module.InvokeVoidAsync("InitGame");
+            await _Canvas.FocusAsync();
 
             _GameLoopTask = Task.Run(GameLoop);
         }
 
         await base.OnAfterRenderAsync(firstRender);
+    }
+
+    void GameInit()
+    {
+        _Player = new Player(500, 779);
+        _Troncs.Clear();
+
+        double yOffset = (LINE_HEIGHT - BUCHE_HEIGHT) / 2;
+
+        for (int i = LINE_HEIGHT * 2; i < LINE_HEIGHT * 2 + (LINE_HEIGHT * NB_WATER_LINES); i += LINE_HEIGHT)
+        {
+            _Troncs.Add(new Tronc(100 + RNG.Next(0, 400), i + yOffset, 2 + RNG.NextDouble() * 3));
+            _Troncs.Add(new Tronc(500 + RNG.Next(0, 800), i + yOffset, 2 + RNG.NextDouble() * 3));
+        }
+        _GameStart = DateTime.Now;
+        _LoopCount = 0;
+        _GameStrated = true;
     }
 
     async void GameLoop()
@@ -55,10 +98,178 @@
 
                     DateTime start = DateTime.Now;
 
+                    List<(Tronc, Tronc)> collisions = new List<(Tronc, Tronc)>();
 
+                    if (KeysPressed.Contains(IKeyState.E_Controle.LEFT))
+                    {
+                        try
+                        {
+                            _Player.MoveX(-2);
+                        }
+                        catch (Exception)
+                        {
+                            // Perdu
+                            _GameStrated = false;
+                            var result = await DialogService.ShowMessageBox("Perdu !", "Vous êtes tombé à l'eau !", "Réessayer");
+                            if (result == true)
+                            {
+                                GameInit();
+                            }
+                            continue;
+                        }
+                    }
+                    if (KeysPressed.Contains(IKeyState.E_Controle.RIGHT))
+                    {
+                        try
+                        {
+                            _Player.MoveX(2);
+                        }
+                        catch (Exception)
+                        {
+                            // Perdu
+                            _GameStrated = false;
+                            var result = await DialogService.ShowMessageBox("Perdu !", "Vous êtes tombé à l'eau !", "Réessayer");
+                            if (result == true)
+                            {
+                                GameInit();
+                            }
+                            continue;
+                        }
+                    }
+                    if (KeysPressed.Contains(IKeyState.E_Controle.UP))
+                    {
+                        KeysPressed.Remove(IKeyState.E_Controle.UP);
+                        if (_Player.Y == 779)
+                        {
+                            _Player.Y -= LINE_HEIGHT * 2;
+                        }
+                        else if (_Player.Y == 95)
+                        {
+                            _Player.Y -= LINE_HEIGHT * 2;
+                            // Gagné
+                            _GameStrated = false;
+                            if (_Module is not null)
+                                await _Module.InvokeVoidAsync("RenderGame", _Troncs.OrderByDescending(t => t.Position.Y), _Player);
+                            StringBuilder message = new StringBuilder();
+                            message.AppendLine($"Vous avez traversé la rivière avec succès !");
+                            message.AppendLine($"Temps : {(DateTime.Now - _GameStart).TotalSeconds:F2} secondes");
+                            message.AppendLine($"Nombre de boucles : {_LoopCount}");
+
+                            var result = await DialogService.ShowMessageBox("Gagné !", "Vous avez traversé la rivière avec succès !", "Rejouer");
+                            if (result == true)
+                            {
+                                GameInit();
+                            }
+                            continue;
+                        }
+                        else
+                        {
+                            _Player.Y -= LINE_HEIGHT;
+                        }
+
+                        Tronc? tronc = (from t in _Troncs
+                                        where t.Position.Y == _Player.Y - BUCHE_HEIGHT / 2
+                                        where t.IsColliding(_Player)
+                                        select t).FirstOrDefault();
+
+                        if (tronc is null)
+                        {
+                            // Perdu
+                            _GameStrated = false;
+                            var result = await DialogService.ShowMessageBox("Perdu !", "Vous êtes tombé à l'eau !", "Réessayer");
+                            if (result == true)
+                            {
+                                GameInit();
+                            }
+                            continue;
+                        }
+                        else
+                        {
+                            _Player.OnTronc = tronc;
+                        }
+                    }
+                    if (KeysPressed.Contains(IKeyState.E_Controle.DOWN))
+                    {
+                        KeysPressed.Remove(IKeyState.E_Controle.DOWN);
+                        if (_Player.Y == 779)
+                        {
+                            // Rien
+                        }
+                        else if (_Player.Y == 779 - LINE_HEIGHT * 2)
+                        {
+                            _Player.Y = 779;
+                            _Player.OnTronc = null;
+                        }
+                        else
+                        {
+                            _Player.Y += LINE_HEIGHT;
+
+                            Tronc? tronc = (from t in _Troncs
+                                            where t.Position.Y == _Player.Y + BUCHE_HEIGHT / 2
+                                            where t.IsColliding(_Player)
+                                            select t).FirstOrDefault();
+
+                            if (tronc is null)
+                            {
+                                // Perdu
+                                _GameStrated = false;
+                                var result = await DialogService.ShowMessageBox("Perdu !", "Vous êtes tombé à l'eau !", "Réessayer");
+                                if (result == true)
+                                {
+                                    GameInit();
+                                }
+                                continue;
+                            }
+                            else
+                            {
+                                _Player.OnTronc = tronc;
+                            }
+                        }
+                    }
+
+                    _Troncs.ForEach(t =>
+                    {
+                        t.Position.X -= t.Speed;
+                        if (t.Position.X + t.Size.X < 0)
+                        {
+                            t.Position.X = 1000;
+                            t.Speed = 2 + RNG.NextDouble() * 3;
+                        }
+                        Tronc? colision = (from tronc in _Troncs // Parcourir les troncs
+                                           where tronc != t // S'assurer de ne pas se tester soi-même
+                                           where tronc.Position.Y == t.Position.Y // Même ligne
+                                           where t.IsColliding(tronc) // Collision
+                                           select tronc).FirstOrDefault(); // Prendre le premier trouvé ou null
+
+                        // Si une collision est trouvée et qu'elle n'est pas déjà dans la liste, l'ajouter.
+                        if (colision is not null && !collisions.Any(c => c.Item2 == t))
+                            collisions.Add((t, colision));
+                    });
+
+                    collisions.ForEach(c =>
+                    {
+                        // Échanger les vitesses des deux troncs en collision
+                        (c.Item1.Speed, c.Item2.Speed) = (c.Item2.Speed, c.Item1.Speed);
+                        // Faire reculer légèrement les troncs pour éviter qu'ils restent collés
+                        if (c.Item1.Position.X < c.Item2.Position.X)
+                        {
+                            c.Item1.Position.X -= c.Item1.Speed;
+                            c.Item2.Position.X += c.Item2.Speed;
+                        }
+                        else
+                        {
+                            c.Item1.Position.X += c.Item1.Speed;
+                            c.Item2.Position.X -= c.Item2.Speed;
+                        }
+                    });
+
+                    if (_Player.UpdatePosition())
+                        _LoopCount++;
 
                     if (_Module is not null)
-                        await _Module.InvokeVoidAsync("RenderGame");
+                        await _Module.InvokeVoidAsync("RenderGame", _Troncs, _Player);
+
+                    await InvokeAsync(StateHasChanged);
 
                     DateTime end = DateTime.Now;
 
@@ -93,5 +304,62 @@
             {
             }
         }
+    }
+
+    class Player(double x, double y) : Point(x, y)
+    {
+        private Tronc? _OnTronc { get; set; } = null;
+        private double? _OffsetX { get; set; } = null;
+
+        public Tronc? OnTronc
+        {
+            get => _OnTronc; set
+            {
+                if (value is null)
+                {
+                    _OffsetX = null;
+                }
+                else
+                {
+                    _OffsetX = X - value.Position.X;
+                }
+                _OnTronc = value;
+            }
+        }
+
+        public bool UpdatePosition()
+        {
+            bool looped = false;
+            if (OnTronc is not null && _OffsetX is not null)
+            {
+                double nextX = OnTronc!.Position.X + _OffsetX!.Value;
+                if (nextX - 500 > X)
+                    looped = true;
+
+                X = nextX;
+            }
+            return looped;
+        }
+
+        public void MoveX(double move)
+        {
+            X += move;
+            if (_OffsetX is not null)
+            {
+                _OffsetX += move;
+            }
+            if (OnTronc is not null)
+            {
+                if (X < OnTronc.Position.X || X > OnTronc.Position.X + OnTronc.Size.X)
+                {
+                    throw new Exception("Le joueur est tombé à l'eau !");
+                }
+            }
+        }
+    }
+
+    class Tronc(double x, double y, double speed) : Rect(x, y, 114, 30)
+    {
+        public double Speed { get; set; } = speed;
     }
 }
