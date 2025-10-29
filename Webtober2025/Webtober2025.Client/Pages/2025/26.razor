@@ -29,8 +29,9 @@
     bool _GameStrated { get; set; } = true;
     DateTime _GameStart { get; set; } = DateTime.Now;
     bool _Looping { get; set; } = true;
-    double _Vitesse { get; set; } = 0;   
+    double _Vitesse { get; set; } = 0;
     Point _Position { get; set; } = new Point(500, 0);
+    Point _SpriteSize { get; set; } = new Point(79 * 3, 44 * 3);
 
 
     public List<IKeyState.E_Controle> KeysPressed { get; } = new List<IKeyState.E_Controle>();
@@ -63,18 +64,30 @@
             {
                 if (_GameStrated)
                 {
-                    DateTime start = DateTime.Now;    
-                    
+                    DateTime start = DateTime.Now;
+
                     double acceleration = 0;
                     if (KeysPressed.Contains(IKeyState.E_Controle.UP))
                         acceleration = 17;
-                        else if (KeysPressed.Contains(IKeyState.E_Controle.DOWN))
+                    else if (KeysPressed.Contains(IKeyState.E_Controle.DOWN))
                         acceleration = -20;
 
+                    bool? move = null;
+
                     if (KeysPressed.Contains(IKeyState.E_Controle.LEFT))
-                        _Position.X -= 10;
+                    {
+                        move = false;
+                        _Position.X -= _Vitesse / 4;
+                        if (_Position.X < _SpriteSize.X / 2)
+                            _Position.X = _SpriteSize.X / 2;
+                }
                     else if (KeysPressed.Contains(IKeyState.E_Controle.RIGHT))
-                        _Position.X += 10;
+                    {
+                        move = true;
+                        _Position.X += _Vitesse / 4;
+                        if (_Position.X > 2000 - _SpriteSize.X / 2)
+                            _Position.X = 2000 - _SpriteSize.X / 2;
+                    }
 
                     acceleration -= Math.Sqrt(_Vitesse);
                     _Vitesse += acceleration * 0.03;
@@ -82,10 +95,10 @@
                     if (_Vitesse < 0)
                         _Vitesse = 0;
 
-                    _Position.Y += (int)_Vitesse;
+                    _Position.Y += (int)_Vitesse / 4;
 
                     if (_Module is not null)
-                        await _Module.InvokeVoidAsync("RenderGame", _Position);
+                        await _Module.InvokeVoidAsync("RenderGame", _Position, move);
 
                     await InvokeAsync(StateHasChanged);
 

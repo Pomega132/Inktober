@@ -8,25 +8,25 @@ export function InitGame()
 
 /**
  * 
- * @param {Point} Pos
+ * @param {Point} pos
  */
-export function RenderGame(Pos)
+export function RenderGame(pos, move)
 {
     // Effacer le canvas.
     GameState.Context.clearRect(0, 0, GameState.Canvas.width, GameState.Canvas.height);
     GameState.Context.imageSmoothingEnabled = false;
 
-    var camOffsetX = 0;
+    var camOffsetX = GameState.Canvas.width / 2;
     var spriteOffsetX = 0;
 
-    if (Pos.x > GameState.Canvas.width / 2)
-        camOffsetX = -(Pos.x - GameState.Canvas.width / 2);
+    if (pos.x > 0)
+        camOffsetX = -(pos.x - GameState.Canvas.width / 2);
 
-    if (camOffsetX < -GameState.Canvas.width / 2)
-        camOffsetX = -GameState.Canvas.width / 2;
+    if (camOffsetX < -GameState.Canvas.width * 1.5)
+        camOffsetX = -GameState.Canvas.width * 1.5;
 
-    if (camOffsetX != -(Pos.x - GameState.Canvas.width / 2))
-        spriteOffsetX = -camOffsetX;
+    if (camOffsetX != -(pos.x - GameState.Canvas.width / 2))
+        spriteOffsetX = camOffsetX + (pos.x - GameState.Canvas.width / 2);
 
     // Paramètres de la route (haut = horizon, bas = bord écran)
     const horizonY = GameState.Canvas.height * 0.5;
@@ -35,11 +35,12 @@ export function RenderGame(Pos)
     // Centre de la route en haut/bas (tu pourras les décaler pour les virages)
     const cxTop = GameState.Canvas.width / 2, cxBottom = GameState.Canvas.width / 2;
 
-    const roadWidthBottom = GameState.Canvas.width * 2; // largeur de la route en bas (ajuste à ton goût)
+    const roadWidthTop = 20; // largeur de la route en haut 
+    const roadWidthBottom = GameState.Canvas.width * 2; // largeur de la route en bas 
 
     // Demi-largeur de la route en haut/bas (en haut ~ 10px comme ton code, en bas large)
-    const roadHalfTop = 10;
-    const roadHalfBottom = GameState.Canvas.width * 0.42; // ajuste à ton goût
+    const roadHalfTop = roadWidthTop / 2;
+    const roadHalfBottom = roadWidthBottom / 2; // ajuste à ton goût
 
     // Helpers de lerp
     const lerp = (a, b, t) => a + (b - a) * t;
@@ -47,11 +48,23 @@ export function RenderGame(Pos)
     const roadHalfAtY = (y) => lerp(roadHalfTop, roadHalfBottom, tAtY(y));
     const centerXAtY = (y) => lerp(cxTop, cxBottom, tAtY(y));  // utile si tu fais des virages
 
+    // Clear l'arrière-plan (ciel bleu clair)
+    GameState.Context.fillStyle = "#0194fe"; // bleu ciel
+    GameState.Context.fillRect(0, 0, GameState.Canvas.width, GameState.Canvas.height);
+
+    // Dessiner les nuages dans le ciel sans sprite, juste des cercles blancs avec opacité dégrader.
+    DrawClouds(GameState.Context);
+
+
+    // Dessiner le sol (herbe verte)
+    GameState.Context.fillStyle = "#00aa00"; // vert herbe
+    GameState.Context.fillRect(0, GameState.Canvas.height / 2, GameState.Canvas.width, GameState.Canvas.height / 2);
+
     // Dessiner le la route jusqu'a l'horizon. Il n'y a pas de sprite, donc on va tous dessiner avec des formes.
     GameState.Context.fillStyle = "gray";
     GameState.Context.beginPath();
-    GameState.Context.moveTo(0, GameState.Canvas.height);
-    GameState.Context.lineTo(roadWidthBottom, GameState.Canvas.height);
+    GameState.Context.moveTo(0 + camOffsetX, GameState.Canvas.height);
+    GameState.Context.lineTo(roadWidthBottom + camOffsetX, GameState.Canvas.height);
     GameState.Context.lineTo(GameState.Canvas.width / 2 + 10, GameState.Canvas.height / 2);
     GameState.Context.lineTo(GameState.Canvas.width / 2 - 10, GameState.Canvas.height / 2);
     GameState.Context.closePath();
@@ -76,11 +89,11 @@ export function RenderGame(Pos)
         horizonY: horizonY,
         bottomY: bottomY,
         RoadWidth: GameState.Canvas.width * 2,
-        bottomX: GameState.Canvas.width * edgeFrac,  // centre en bas
+        bottomX: GameState.Canvas.width * edgeFrac + camOffsetX,  // centre en bas
         centerXAtY,
         roadHalfAtY: roadHalfAtY,
         // proportion de la largeur route dédiée à la ligne
-        lineFrac: 0.02,       // ~5% de la demi-largeur (ajuste)
+        lineFrac: 0.01,       // ~5% de la demi-largeur (ajuste)
         dashLenNear: 80,      // longueur d’un tiret près de la caméra
         dashLenFar: 8,        // longueur d’un tiret près de l’horizon
         gapScale: 0.6,        // 0.6 => l’espace fait ~60% de la longueur
@@ -92,51 +105,161 @@ export function RenderGame(Pos)
         horizonY: horizonY,
         bottomY: bottomY,
         RoadWidth: GameState.Canvas.width * 2,
-        bottomX: GameState.Canvas.width * (2 - edgeFrac),  // centre en bas
+        bottomX: GameState.Canvas.width * (2 - edgeFrac) + camOffsetX,  // centre en bas
         centerXAtY,
         roadHalfAtY: roadHalfAtY,
         // proportion de la largeur route dédiée à la ligne
-        lineFrac: 0.02,       // ~5% de la demi-largeur (ajuste)
+        lineFrac: 0.01,       // ~5% de la demi-largeur (ajuste)
         dashLenNear: 80,      // longueur d’un tiret près de la caméra
         dashLenFar: 8,        // longueur d’un tiret près de l’horizon
-        gapScale: 0.6,        // 0.6 => l’espace fait ~60% de la longueur
+        gapScale: 1.2,        // 0.6 => l’espace fait ~60% de la longueur
         style: { type: 'solid', color: '#e7e7e7' }
         //color: "white"
     });
 
+    const NB_LINES = 5;
+    for (var i = 1; i < NB_LINES + 1; i++)
+    {
+        // --- Ligne centrale en QUADS perspective ---
+        drawDashesByBottomX(GameState.Context, {
+            horizonY: horizonY,
+            bottomY: bottomY,
+            bottomX: roadWidthBottom * i / (NB_LINES + 1) + camOffsetX,  // centre en bas
+            centerXAtY,
+            roadHalfAtY: roadHalfAtY,
+            Offset: pos.y,
+            // proportion de la largeur route dédiée à la ligne
+            lineFrac: 0.01,       // ~5% de la demi-largeur (ajuste)
+            dashLenNear: 80,      // longueur d’un tiret près de la caméra
+            dashLenFar: 8,        // longueur d’un tiret près de l’horizon
+            gapScale: 0.6,        // 0.6 => l’espace fait ~60% de la longueur
+            //color: "white"
+        });
+    }
 
-    // --- Ligne centrale en QUADS perspective ---
-    drawDashesByBottomX(GameState.Context, {
-        horizonY: horizonY,
-        bottomY: bottomY,
-        bottomX: GameState.Canvas.width / 3,  // centre en bas
-        centerXAtY,
-        roadHalfAtY: roadHalfAtY,
-        Offset: Pos.Y,
-        // proportion de la largeur route dédiée à la ligne
-        lineFrac: 0.02,       // ~5% de la demi-largeur (ajuste)
-        dashLenNear: 80,      // longueur d’un tiret près de la caméra
-        dashLenFar: 8,        // longueur d’un tiret près de l’horizon
-        gapScale: 0.6,        // 0.6 => l’espace fait ~60% de la longueur
-        //color: "white"
-    });
+    // Exemple d'utilisation à la fin de RenderGame :
+    //ApplyPixelizer(GameState.Context, 4);
 
-    drawDashesByBottomX(GameState.Context, {
-        horizonY: horizonY,
-        bottomY: bottomY,
-        bottomX: GameState.Canvas.width * 2 / 3,  // centre en bas
-        centerXAtY,
-        roadHalfAtY: roadHalfAtY,
-        Offset: Pos.Y,
-        // proportion de la largeur route dédiée à la ligne
-        lineFrac: 0.02,       // ~5% de la demi-largeur (ajuste)
-        dashLenNear: 80,      // longueur d’un tiret près de la caméra
-        dashLenFar: 8,        // longueur d’un tiret près de l’horizon
-        gapScale: 0.6,        // 0.6 => l’espace fait ~60% de la longueur
-        //color: "white"
-    });
+    // TODO Dessiner des arbres sur les côtés de la route espacé régulièrement.
+    
+
+    // Dessiner la voiture du joueur au centre bas de l'écran.
+    const spriteSize = new Point(79, 44);
+    const spriteScale = 3.0;
+    var sprite;
+    if (move === true)
+        sprite = GameState.Textures.GetImage("VoitureDroite", GameState.FrameCount);
+    else if (move === false)
+        sprite = GameState.Textures.GetImage("VoitureGauche", GameState.FrameCount);
+    else
+        sprite = GameState.Textures.GetImage("Voiture", GameState.FrameCount);
+
+    GameState.Context.drawImage(
+        sprite,
+        GameState.Canvas.width / 2 + spriteOffsetX - spriteSize.x * spriteScale / 2,
+        bottomY - spriteSize.y * spriteScale - 15,
+        spriteSize.x * spriteScale,
+        spriteSize.y * spriteScale);
 }
 
+/**
+ * Créé des nuages dans le ciel à positions fixe de façon procédurale pour avoir toujours les mêmes.
+ * @param {any} ctx
+ */
+function DrawClouds(ctx)
+{
+    // Génération déterministe de nuages variés, couvrant toute la zone (1000,400) et débordant un peu
+    const clouds = [];
+    const cloudGroups = [
+        { count: 5, cx: 200, cy: 100, spread: 80, rBase: 60 },
+        { count: 4, cx: 800, cy: 80, spread: 120, rBase: 70 },
+        { count: 6, cx: 500, cy: 200, spread: 150, rBase: 55 },
+        { count: 4, cx: 950, cy: 350, spread: 100, rBase: 65 },
+        { count: 3, cx: 100, cy: 350, spread: 90, rBase: 50 },
+        { count: 5, cx: 600, cy: 350, spread: 130, rBase: 60 },
+        { count: 3, cx: 1050, cy: 50, spread: 60, rBase: 45 }, // déborde à droite
+        { count: 2, cx: -50, cy: 60, spread: 40, rBase: 40 },  // déborde à gauche
+        { count: 2, cx: 500, cy: -40, spread: 80, rBase: 55 }, // déborde en haut
+        { count: 2, cx: 500, cy: 420, spread: 80, rBase: 55 }  // déborde en bas
+    ];
+
+    // Générateur pseudo-aléatoire déterministe
+    function seededRandom(seed)
+    {
+        var x = Math.sin(seed) * 10000;
+        return x - Math.floor(x);
+    }
+
+    let cloudIdx = 0;
+    for (let group of cloudGroups)
+    {
+        for (let i = 0; i < group.count; i++)
+        {
+            // Position déterministe dans le groupe, rayon variable
+            const angle = seededRandom(cloudIdx * 3.1 + 1.7) * Math.PI * 2;
+            const dist = seededRandom(cloudIdx * 2.3 + 2.9) * group.spread;
+            const x = group.cx + Math.cos(angle) * dist;
+            const y = group.cy + Math.sin(angle) * dist;
+            const r = group.rBase * (0.7 + seededRandom(cloudIdx * 1.5 + 4.2) * 0.7);
+            clouds.push({ x, y, r, idx: cloudIdx });
+            cloudIdx++;
+        }
+    }
+
+    for (let cloud of clouds)
+    {
+        // Nuage principal
+        const gradient = ctx.createRadialGradient(cloud.x, cloud.y, cloud.r * 0.3, cloud.x, cloud.y, cloud.r);
+        gradient.addColorStop(0, 'rgba(255,255,255,0.85)');
+        gradient.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(cloud.x, cloud.y, cloud.r, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Extensions "fluffy" déterministes
+        const extCount = 3 + Math.floor(seededRandom(cloud.idx * 5.7 + 7.3) * 3);
+        for (let i = 0; i < extCount; i++)
+        {
+            const angle = Math.PI * 2 * (i / extCount) + seededRandom(cloud.idx * 2.1 + i * 3.3) * 0.5;
+            const dx = Math.cos(angle) * cloud.r * (0.5 + seededRandom(cloud.idx * 1.9 + i * 2.7) * 0.5);
+            const dy = Math.sin(angle) * cloud.r * (0.2 + seededRandom(cloud.idx * 2.5 + i * 1.1) * 0.5);
+            const r2 = cloud.r * (0.4 + seededRandom(cloud.idx * 3.2 + i * 2.8) * 0.3);
+            const grad2 = ctx.createRadialGradient(cloud.x + dx, cloud.y + dy, r2 * 0.3, cloud.x + dx, cloud.y + dy, r2);
+            grad2.addColorStop(0, 'rgba(255,255,255,0.7)');
+            grad2.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = grad2;
+            ctx.beginPath();
+            ctx.arc(cloud.x + dx, cloud.y + dy, r2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+}
+
+/**
+ * Applique un effet "pixeliser" sur le contexte du canvas.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} pixelSize Taille du "pixel" (ex: 4, 8, 16)
+ */
+function ApplyPixelizer(ctx, pixelSize)
+{
+    const canvas = ctx.canvas;
+    // Crée une image temporaire
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width / pixelSize;
+    tempCanvas.height = canvas.height / pixelSize;
+    const tempCtx = tempCanvas.getContext('2d');
+
+    // Dessine l'image réduite
+    tempCtx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
+
+    // Désactive le lissage pour effet pixel
+    ctx.imageSmoothingEnabled = false;
+
+    // Redessine l'image agrandie (pixelisée)
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
+}
 
 function drawDashesByBottomX(ctx, {
     horizonY, bottomY,
@@ -216,7 +339,12 @@ function drawQuad(ctx, x1, y1, x2, y2, x3, y3, x4, y4)
 export class Textures
 {
     Texture = {};
-    TextureIds = [];
+    TextureIds = {
+        Voiture: "Voiture",
+        VoitureDroite: "VoitureDroite",
+        VoitureGauche: "VoitureGauche",
+        Arbre: "Arbre"
+    };
     FrameRate = 10;
 
     /**
