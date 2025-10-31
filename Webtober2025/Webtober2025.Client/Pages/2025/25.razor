@@ -1,7 +1,507 @@
-@page "/2025/25"
+﻿@page "/2025/25"
+@using Webtober2025.Client.Models
+@using LabelAttribute = Tools.Core.Attributes.LabelAttribute
 
-<h3>25 - Enfer</h3>
+<div class="d-flex justify-space-between">
+    <h3>25 - Enfer</h3>
+
+    <div class="d-flex gap-5">
+        @* <MudText Typo="Typo.h6">Temps : @($"{DateTime.Now - _GameStart:mm\\:ss}")</MudText> *@
+        @* <MudText Typo="Typo.h6">Vitesse : @($"{_Vitesse:0}") km/h</MudText> *@
+    </div>
+</div>
+
+<MudPaper Class="flex-1 d-flex justify-space-around">
+    <div>
+        <div id="GameZone" class="border">
+            <div id="map" class="relative" style="width:@(_GameSize.X)px; height:@(_GameSize.Y)px;">
+                @for (int y = 0; y < _Map.Length; y++)
+                {
+                    var row = _Map[y];
+                    int yIndex = y;
+
+                    <div class="d-flex absolute" style="top:@(yIndex * (_TileSize.Y / 2 + 2))px; left:@(yIndex % 2 == 0 ? 0 : _TileSize.X * 3 / 4d + 3)px;">
+                        @for (int x = 0; x < row.Length; x++)
+                        {
+                            var tile = row[x];
+                            int xIndex = x;
+
+                            <div class="@($"absolute hover-ligth {(tile.Red ? "red" : "")} {(tile.Shake ? "shake" : "")}")" style="height:100px; left:@((_TileSize.X + _TileSize.X * 4 / 7d - 2) * x)px;" @onclick="() => Click(tile)">
+                                <img src="@(tile.GetTilePath())" style="height:100%;" />
+                                @if (!tile.Hidden)
+                                {
+                                    foreach (var deco in tile.Options.Decotions.OrderBy(d => d.Pos.Y))
+                                    {
+                                        <img class="absolute" src="@(deco.Type.GetLabel())" style="top:@(deco.Pos.Y - @DecorationHeight(deco.Type))px; left:@(deco.Pos.X)px; height:@DecorationHeight(deco.Type)px;" />
+                                    }
+                                    @if (tile.ObtacleType != null)
+                                    {
+                                        <img class="absolute" src="@(tile.ObtacleType?.GetLabel())" style="@tile.GetObstacleStyle()" />
+                                    }
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+        </div>
+    </div>
+</MudPaper>
 
 @code {
+    Point _GameSize { get; set; } = new Point(1280, 780);
+    Point _TileSize { get; set; } = new Point(115.23, 100);
+    double _Ratio = 100 / 269;
+    Tile[][] _Map { get; set; } = [];
 
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        GenerateMap(7, 14);
+    }
+
+    async Task Click(Tile tile)
+    {
+        if (!tile.Hidden)
+            return;
+
+        tile.Hidden = false;
+        await InvokeAsync(StateHasChanged);
+        switch (tile.ObtacleType)
+        {
+            case Tile.E_Obtacle.LAVE:
+                await tile.CalsineOnce(this, _Map);
+                break;
+            case Tile.E_Obtacle.POURPRE_CHAUD_1:
+            case Tile.E_Obtacle.POURPRE_CHAUD_2:
+                await tile.CalsineAll(this, _Map);
+                break;
+        }
+    }
+
+    int DecorationHeight(Tile.E_Deco deco)
+    {
+        switch (deco)
+        {
+            case Tile.E_Deco.ARBRE_1:
+            case Tile.E_Deco.ARBRE_2:
+            case Tile.E_Deco.ARBRE_3:
+            case Tile.E_Deco.ARBRE_4:
+                return 100;
+            case Tile.E_Deco.ARBRE_MORT_1:
+            case Tile.E_Deco.ARBRE_MORT_2:
+                return 50;
+            case Tile.E_Deco.DECO_PIERRE_1:
+            case Tile.E_Deco.DECO_PIERRE_2:
+                return 25;
+            case Tile.E_Deco.DECO_POURPRE_2:
+                return 50;
+            default:
+                return 30;
+        }
+    }
+
+    void GenerateMap(int width, int height)
+    {
+        var rng = new Random();
+        _Map = new Tile[height][];
+        for (int y = 0; y < height; y++)
+        {
+            _Map[y] = new Tile[width];
+            for (int x = 0; x < width; x++)
+            {
+                var typeRoll = rng.Next(0, 100);
+                Tile.E_Type type;
+                Tile.Opt options = new Tile.Opt();
+                if (typeRoll < 50)
+                {
+                    type = Tile.E_Type.SABLE;
+                    int result = rng.Next(0, 100);
+                    while (result > 20)
+                    {
+                        // Ajouter de la décoration tant que le résultat est supérieur à 20.
+                        // Il y a 10 décorations possible pour le sable : Arbre1, Arbre2, Arbre3, Arbre4, ArbreMort1, ArbreMort2, DecoCotes, DecoCrane, DecoPierre1, DecoPierre2
+                        // Pas plus de 3 décorations par case.
+                        // Une décoration meme n'est présente q'une fois par case.
+                        List<Tile.E_Deco> decoTypes = [
+                            Tile.E_Deco.ARBRE_1,
+                            Tile.E_Deco.ARBRE_2,
+                            Tile.E_Deco.ARBRE_3,
+                            Tile.E_Deco.ARBRE_4,
+                            Tile.E_Deco.ARBRE_MORT_1,
+                            Tile.E_Deco.ARBRE_MORT_2,
+                            Tile.E_Deco.DECO_COTES,
+                            Tile.E_Deco.DECO_CRANE,
+                            Tile.E_Deco.DECO_PIERRE_1,
+                            Tile.E_Deco.DECO_PIERRE_2
+                        ];
+
+
+                        decoTypes.RemoveAll(d1 => options.Decotions.Any(d => d.Type == d1));
+                        if (decoTypes.Count == 0)
+                            break;
+
+                        var decoType = decoTypes[rng.Next(0, decoTypes.Count)];
+                        var decoPos = new Point(rng.Next(20, 60), rng.Next(30, 80));
+                        options.Decotions.Add((decoType, decoPos));
+
+                        if (options.Decotions.Count >= 3)
+                            break;
+                        result = rng.Next(0, 100);
+                    }
+
+                }
+                else if (typeRoll < 75)
+                {
+                    type = Tile.E_Type.POUPRE;
+                    options.Obstacle = rng.Next(0, 100) < 30;
+                    options.Chaud = rng.Next(0, 100) < 20;
+
+                    if (!options.Obstacle)
+                    {
+                        int result = rng.Next(0, 100);
+                        while (result > 20)
+                        {
+                            // Ajouter de la décoration tant que le résultat est supérieur à 20.
+                            // Il y a 10 décorations possible pour le sable : Arbre1, Arbre2, Arbre3, Arbre4, ArbreMort1, ArbreMort2, DecoCotes, DecoCrane, DecoPierre1, DecoPierre2
+                            // Pas plus de 3 décorations par case.
+                            // Une décoration meme n'est présente q'une fois par case.
+                            List<Tile.E_Deco> decoTypes = [
+                                Tile.E_Deco.DECO_COTES,
+                            Tile.E_Deco.DECO_CRANE,
+                            Tile.E_Deco.DECO_PIERRE_1,
+                            Tile.E_Deco.DECO_PIERRE_2,
+                            Tile.E_Deco.DECO_POURPRE_1,
+                            Tile.E_Deco.DECO_POURPRE_2
+                            ];
+
+
+                            decoTypes.RemoveAll(d1 => options.Decotions.Any(d => d.Type == d1));
+                            if (decoTypes.Count == 0)
+                                break;
+
+                            var decoType = decoTypes[rng.Next(0, decoTypes.Count)];
+                            var decoPos = new Point(rng.Next(20, 60), rng.Next(30, 80));
+                            options.Decotions.Add((decoType, decoPos));
+
+                            if (options.Decotions.Count >= 3)
+                                break;
+                            result = rng.Next(0, 100);
+                        }
+                    }
+                }
+                else if (typeRoll < 90)
+                {
+                    type = Tile.E_Type.MARON;
+                    options.Obstacle = rng.Next(0, 100) < 40;
+                    options.Chaud = rng.Next(0, 100) < 25;
+
+                    if (!options.Obstacle && !options.Chaud)
+                    {
+                        int result = rng.Next(0, 100);
+                        while (result > 20)
+                        {
+                            // Ajouter de la décoration tant que le résultat est supérieur à 20.
+                            // Il y a 10 décorations possible pour le sable : Arbre1, Arbre2, Arbre3, Arbre4, ArbreMort1, ArbreMort2, DecoCotes, DecoCrane, DecoPierre1, DecoPierre2
+                            // Pas plus de 3 décorations par case.
+                            // Une décoration meme n'est présente q'une fois par case.
+                            List<Tile.E_Deco> decoTypes = [
+                                Tile.E_Deco.DECO_COTES,
+                                Tile.E_Deco.DECO_CRANE,
+                                Tile.E_Deco.DECO_PIERRE_1,
+                                Tile.E_Deco.DECO_PIERRE_2,
+                                Tile.E_Deco.DECO_MARON
+                            ];
+
+
+                            decoTypes.RemoveAll(d1 => options.Decotions.Any(d => d.Type == d1));
+                            if (decoTypes.Count == 0)
+                                break;
+
+                            var decoType = decoTypes[rng.Next(0, decoTypes.Count)];
+                            var decoPos = new Point(rng.Next(20, 60), rng.Next(30, 80));
+                            options.Decotions.Add((decoType, decoPos));
+
+                            if (options.Decotions.Count >= 3)
+                                break;
+                            result = rng.Next(0, 100);
+                        }
+                    }
+                }
+                else
+                {
+                    type = Tile.E_Type.LAVE;
+                    options.Obstacle = rng.Next(0, 100) < 40;
+                }
+                _Map[y][x] = new Tile(type, new Point(x, y), options);
+            }
+        }
+    }
+
+    class Tile(Tile.E_Type type, Point position, Tile.Opt? options = null)
+    {
+        public E_Type Type { get; set; } = type;
+        public Point Position { get; set; } = position;
+        public bool Hidden { get; set; } = true;
+        public Opt Options { get; set; } = options ?? new Tile.Opt();
+        public E_Obtacle? ObtacleType { get; set; } = InitObtacleType(type, options);
+        public bool Red { get; set; } = false;
+        public bool Shake { get; set; } = false;
+
+        private static E_Obtacle? InitObtacleType(E_Type type, Opt? options)
+        {
+            if (options?.Obstacle != true)
+                return null;
+
+            switch (type)
+            {
+                case E_Type.LAVE:
+                    return E_Obtacle.LAVE;
+                case E_Type.MARON:
+                    if (options!.Chaud)
+                        return E_Obtacle.LAVE;
+
+                    if (RNG.Next() % 2 == 0)
+                        return E_Obtacle.MARON_1;
+                    else
+                        return E_Obtacle.MARON_2;
+                case E_Type.POUPRE:
+                    if (options!.Chaud)
+                    {
+                        if (RNG.Next() % 2 == 0)
+                            return E_Obtacle.POURPRE_CHAUD_1;
+                        else
+                            return E_Obtacle.POURPRE_CHAUD_2;
+                    }
+
+                    return E_Obtacle.POURPRE;
+                default:
+                    return null;
+            }
+        }
+
+        public string GetTilePath()
+        {
+            if (Hidden)
+                return "Images/2025/25/SolGris.png";
+
+            switch (Type)
+            {
+                case E_Type.SABLE:
+                    return "Images/2025/25/SolSable.png";
+                case E_Type.POUPRE:
+                    if (Options.Chaud)
+                        return "Images/2025/25/SolPourpreChaud.png";
+                    else
+                        return "Images/2025/25/SolPourpre.png";
+                case E_Type.MARON:
+                    if (Options.Chaud)
+                        return "Images/2025/25/SolMaronChaud.png";
+                    else
+                        return "Images/2025/25/SolMaron.png";
+                case E_Type.LAVE:
+                    return "Images/2025/25/SolLave.png";
+                default:
+                    return "";
+            }
+        }
+
+        public string GetObstacleStyle()
+        {
+            switch (ObtacleType)
+            {
+                case E_Obtacle.LAVE:
+                    return "top:8px; left:8px; height: 78px";
+                case E_Obtacle.MARON_1:
+                    return "top:8px; left:8px; height: 78px";
+                case E_Obtacle.MARON_2:
+                    return "top:5px; left:5px; height: 88px";
+                case E_Obtacle.POURPRE:
+                    return "top:0px; left:0px; height: 100px";
+                case E_Obtacle.POURPRE_CHAUD_1:
+                    return "top:-20px; left:-30px; height: 130px; z-index:2";
+                case E_Obtacle.POURPRE_CHAUD_2:
+                    return "top:-17px; left:0px; height: 117px; z-index: 2";
+                default:
+                    return "";
+            }
+        }
+
+        public Point GetNewPoint(E_Direction direction)
+        {
+            return direction switch
+            {
+                E_Direction.N => Position + new Point(0, -2),
+                E_Direction.NE => Position + new Point((Position.Y % 2), -1),
+                E_Direction.SE => Position + new Point((Position.Y % 2), 1),
+                E_Direction.S => Position + new Point(0, 2),
+                E_Direction.SW => Position + new Point(-1 + (Position.Y % 2), 1),
+                E_Direction.NW => Position + new Point(-1 + (Position.Y % 2), -1),
+                _ => new Point(0, 0),
+            };
+        }
+
+        public void HeatUp(_25 sender, Tile[][] map)
+        {
+            switch (Type)
+            {
+                case E_Type.SABLE:
+                    Options.Decotions.Clear();
+                    Type = E_Type.LAVE;
+                    if (RNG.Next() % 2 == 0)
+                    {
+                        ObtacleType = E_Obtacle.LAVE;
+                        CalsineOnce(sender, map);
+                    }
+                    break;
+                case E_Type.POUPRE:
+                    Options.Chaud = true;
+                    if (ObtacleType == E_Obtacle.POURPRE)
+                    {
+                        if (RNG.Next() % 2 == 0)
+                            ObtacleType = E_Obtacle.POURPRE_CHAUD_1;
+                        else
+                            ObtacleType = E_Obtacle.POURPRE_CHAUD_2;
+                        CalsineAll(sender, map);
+                    }
+                    break;
+                case E_Type.MARON:
+                    Options.Decotions.Clear();
+                    Options.Chaud = true;
+                    if (ObtacleType == E_Obtacle.MARON_1 || ObtacleType == E_Obtacle.MARON_2)
+                    {
+                        ObtacleType = E_Obtacle.LAVE;
+                        CalsineOnce(sender, map);
+                    }
+                    break;
+            }
+        }
+
+        public async Task CalsineOnce(_25 sender, Tile[][] map)
+        {
+            Point nearTile = new Point(-1, -1);
+            while (nearTile.X < 0 || nearTile.Y < 0 || nearTile.X > 6 || nearTile.Y > 13)
+            {
+                // Séléctioner une direction aléatoire
+                var directions = Enum.GetValues(typeof(E_Direction)).Cast<E_Direction>().ToArray();
+                var direction = directions[RNG.Next(0, directions.Length)];
+                nearTile = GetNewPoint(direction);
+            }
+
+            var nearTileObj = map[(int)nearTile.Y][(int)nearTile.X];
+            nearTileObj.Hidden = false;
+            nearTileObj.Shake = true;
+
+            await sender.InvokeAsync(sender.StateHasChanged);
+
+            await Task.Delay(2000);
+            nearTileObj.Shake = false;
+            nearTileObj.HeatUp(sender, map);
+
+            await sender.InvokeAsync(sender.StateHasChanged);
+        }
+
+        public async Task CalsineAll(_25 sender, Tile[][] map)
+        {
+            List<Tile> affectedTiles = new List<Tile>();
+            foreach (E_Direction direction in Enum.GetValues<E_Direction>())
+            {
+                Point nearTile = GetNewPoint(direction);
+                if (nearTile.X < 0 || nearTile.Y < 0 || nearTile.X > 6 || nearTile.Y > 13)
+                {
+                    continue;
+                }
+                affectedTiles.Add(map[(int)nearTile.Y][(int)nearTile.X]);
+            }
+
+            foreach (var affectedTile in affectedTiles)
+            {
+                affectedTile.Hidden = false;
+                affectedTile.Shake = true;
+            }
+
+            await sender.InvokeAsync(sender.StateHasChanged);
+            await Task.Delay(2000);
+
+            foreach (var affectedTile in affectedTiles)
+            {
+                affectedTile.Shake = false;
+                affectedTile.HeatUp(sender, map);
+            }
+
+            await sender.InvokeAsync(sender.StateHasChanged);
+        }
+
+        public class Opt
+        {
+            public bool Chaud { get; set; } = false;
+            public bool Obstacle { get; set; } = false;
+            public List<(E_Deco Type, Point Pos)> Decotions { get; } = new List<(E_Deco Type, Point Pos)>();
+        }
+
+        public enum E_Type
+        {
+            SABLE,
+            POUPRE,
+            MARON,
+            LAVE
+        }
+
+        public enum E_Obtacle
+        {
+            [Label("Images/2025/25/ObstacleLave.png")]
+            LAVE,
+            [Label("Images/2025/25/ObstacleMaron1.png")]
+            MARON_1,
+            [Label("Images/2025/25/ObstacleMaron2.png")]
+            MARON_2,
+            [Label("Images/2025/25/ObstaclePourpre.png")]
+            POURPRE,
+            [Label("Images/2025/25/ObstaclePourpreChaud1.png")]
+            POURPRE_CHAUD_1,
+            [Label("Images/2025/25/ObstaclePourpreChaud2.png")]
+            POURPRE_CHAUD_2
+        }
+
+        public enum E_Deco
+        {
+            [Label("Images/2025/25/Arbre1.png")]
+            ARBRE_1,
+            [Label("Images/2025/25/Arbre2.png")]
+            ARBRE_2,
+            [Label("Images/2025/25/Arbre3.png")]
+            ARBRE_3,
+            [Label("Images/2025/25/Arbre4.png")]
+            ARBRE_4,
+            [Label("Images/2025/25/ArbreMort1.png")]
+            ARBRE_MORT_1,
+            [Label("Images/2025/25/ArbreMort2.png")]
+            ARBRE_MORT_2,
+            [Label("Images/2025/25/DecoCotes.png")]
+            DECO_COTES,
+            [Label("Images/2025/25/DecoCrane.png")]
+            DECO_CRANE,
+            [Label("Images/2025/25/DecoMaron.png")]
+            DECO_MARON,
+            [Label("Images/2025/25/DecoPierre1.png")]
+            DECO_PIERRE_1,
+            [Label("Images/2025/25/DecoPierre2.png")]
+            DECO_PIERRE_2,
+            [Label("Images/2025/25/DecoPourpre1.png")]
+            DECO_POURPRE_1,
+            [Label("Images/2025/25/DecoPourpre2.png")]
+            DECO_POURPRE_2
+        }
+    }
+
+    enum E_Direction
+    {
+        N,
+        NE,
+        SE,
+        S,
+        SW,
+        NW
+    }
 }

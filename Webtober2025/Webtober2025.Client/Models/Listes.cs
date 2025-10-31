@@ -30,7 +30,7 @@ namespace Webtober2025.Client.Models
 			("BOUTON", true),
 			("LUCIOLE", true),
 			("TAPAGEUR", false),
-			("ENFER", false),
+			("ENFER", true),
 			("DÉROUTANT", true),
 			("OIGNON", false),
 			("SQUELLETIQUE", false),
